@@ -22,6 +22,11 @@ if (UNIX AND NOT APPLE)
     pkg_check_modules(GTK_WEBKIT REQUIRED IMPORTED_TARGET gtk+-x11-3.0 webkit2gtk-4.1)
 endif()
 
+juce_add_binary_data(NorbyAutotuneAssets
+    SOURCES
+        Assets/index.html
+)
+
 juce_add_plugin(NorbyAutotune
     COMPANY_NAME "VoxTune"
     BUNDLE_ID "com.voxtune.norbyautotune"
@@ -74,6 +79,7 @@ target_link_libraries(NorbyAutotune
         juce::juce_graphics
         juce::juce_gui_basics
         juce::juce_gui_extra
+        NorbyAutotuneAssets
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
