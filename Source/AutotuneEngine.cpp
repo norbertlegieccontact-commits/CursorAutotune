@@ -32,6 +32,7 @@ void AutotuneEngine::reset() noexcept
     smoothedDetectedHz = 0.0f;
     smoothedConfidence = 0.0f;
     correctionBlend = 0.0f;
+    heldCorrectionRatio = 1.0f;
     inputLevelEnvelope = 0.0f;
     previousOutputSample = 0.0f;
     targetRatioHistory.fill (1.0f);
@@ -45,6 +46,7 @@ void AutotuneEngine::reset() noexcept
     candidateTargetSamples = 0;
     attackProtectionSamplesRemaining = 0;
     pitchHoldSamplesRemaining = 0;
+    correctionHoldSamplesRemaining = 0;
     currentNoteSeconds = 0.0;
 }
 
@@ -135,18 +137,33 @@ AutotuneFrameData AutotuneEngine::processBlock (juce::AudioBuffer<float>& buffer
 
     const auto ratioCents = 1200.0f * std::log2 (juce::jmax (0.0001f, ratio));
     const auto safeRatio = std::pow (2.0f, juce::jlimit (-120.0f, 120.0f, ratioCents) / 1200.0f);
-    const auto shouldCorrect = detection.voiced
-        && detection.confidence >= 0.55f
+    const auto canAcquireCorrection = detection.voiced
+        && detection.confidence >= 0.35f
         && std::abs (ratioCents) >= 8.0f
         && std::abs (ratioCents) <= 120.0f
         && attackProtectionSamplesRemaining <= 0;
+
+    if (canAcquireCorrection)
+    {
+        heldCorrectionRatio += (safeRatio - heldCorrectionRatio) * 0.18f;
+        correctionHoldSamplesRemaining = static_cast<int> (sampleRate * 0.30);
+    }
+    else
+    {
+        correctionHoldSamplesRemaining = juce::jmax (0, correctionHoldSamplesRemaining - numSamples);
+    }
+
+    const auto shouldCorrect = canAcquireCorrection || correctionHoldSamplesRemaining > 0;
     const auto targetBlend = shouldCorrect ? 1.0f : 0.0f;
-    const auto blendTime = targetBlend > correctionBlend ? 0.025f : 0.045f;
+    const auto blendTime = targetBlend > correctionBlend ? 0.035f : 0.12f;
     const auto blendCoefficient = 1.0f - std::exp (-static_cast<float> (numSamples)
                                                    / (static_cast<float> (sampleRate) * blendTime));
     correctionBlend += (targetBlend - correctionBlend) * blendCoefficient;
 
-    auto effectiveRatio = correctionBlend > 0.01f ? std::pow (safeRatio, correctionBlend) : 1.0f;
+    if (! shouldCorrect && correctionBlend < 0.001f)
+        heldCorrectionRatio += (1.0f - heldCorrectionRatio) * 0.02f;
+
+    auto effectiveRatio = correctionBlend > 0.01f ? std::pow (heldCorrectionRatio, correctionBlend) : 1.0f;
 
     if (std::abs (1200.0f * std::log2 (juce::jmax (0.0001f, effectiveRatio))) < 6.0f)
         effectiveRatio = 1.0f;

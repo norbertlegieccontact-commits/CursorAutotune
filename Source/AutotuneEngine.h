@@ -80,6 +80,7 @@ private:
     float smoothedDetectedHz = 0.0f;
     float smoothedConfidence = 0.0f;
     float correctionBlend = 0.0f;
+    float heldCorrectionRatio = 1.0f;
     float inputLevelEnvelope = 0.0f;
     float previousOutputSample = 0.0f;
     std::array<float, 11> targetRatioHistory {};
@@ -91,6 +92,7 @@ private:
     int candidateTargetSamples = 0;
     int attackProtectionSamplesRemaining = 0;
     int pitchHoldSamplesRemaining = 0;
+    int correctionHoldSamplesRemaining = 0;
     double currentNoteSeconds = 0.0;
 
     PitchDetector detector;
