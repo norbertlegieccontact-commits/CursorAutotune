@@ -34,6 +34,9 @@ void AutotuneEngine::reset() noexcept
     correctionBlend = 0.0f;
     inputLevelEnvelope = 0.0f;
     previousOutputSample = 0.0f;
+    targetRatioHistory.fill (1.0f);
+    targetRatioHistoryIndex = 0;
+    targetRatioHistorySize = 0;
     std::fill (dryDelayBuffer.begin(), dryDelayBuffer.end(), 0.0f);
     dryDelayWriteIndex = 0;
     lastTargetMidiNote = -1;
@@ -120,6 +123,7 @@ AutotuneFrameData AutotuneEngine::processBlock (juce::AudioBuffer<float>& buffer
 
     const auto pitchOffsetRatio = std::pow (2.0f, parameters.pitchOffset / 12.0f);
     targetRatio *= pitchOffsetRatio;
+    targetRatio = medianFilterTargetRatio (targetRatio);
 
     const auto ratio = smoothRatio (targetRatio,
                                     parameters.retuneSpeed,
@@ -403,6 +407,19 @@ float AutotuneEngine::calculateTargetRatio (const PitchDetectionResult& detectio
     frameData.note = noteName;
     juce::ignoreUnused (targetMidi);
     return ratio;
+}
+
+float AutotuneEngine::medianFilterTargetRatio (float targetRatio) noexcept
+{
+    const auto targetCents = 1200.0f * std::log2 (juce::jmax (0.0001f, targetRatio));
+    const auto clampedRatio = std::pow (2.0f, juce::jlimit (-120.0f, 120.0f, targetCents) / 1200.0f);
+    targetRatioHistory[static_cast<size_t> (targetRatioHistoryIndex)] = clampedRatio;
+    targetRatioHistoryIndex = (targetRatioHistoryIndex + 1) % static_cast<int> (targetRatioHistory.size());
+    targetRatioHistorySize = juce::jmin (targetRatioHistorySize + 1, static_cast<int> (targetRatioHistory.size()));
+
+    std::array<float, 11> sorted = targetRatioHistory;
+    std::sort (sorted.begin(), sorted.begin() + targetRatioHistorySize);
+    return sorted[static_cast<size_t> (targetRatioHistorySize / 2)];
 }
 
 float AutotuneEngine::smoothRatio (float targetRatio,

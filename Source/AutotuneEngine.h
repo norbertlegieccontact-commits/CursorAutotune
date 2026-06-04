@@ -1,6 +1,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <array>
 
 #include "FormantShifter.h"
 #include "GraphicalMode.h"
@@ -66,6 +67,7 @@ private:
                                 int numSamples,
                                 AutotuneFrameData& frameData) noexcept;
 
+    float medianFilterTargetRatio (float targetRatio) noexcept;
     float smoothRatio (float targetRatio,
                        float retuneSpeed,
                        float humanize,
@@ -80,6 +82,9 @@ private:
     float correctionBlend = 0.0f;
     float inputLevelEnvelope = 0.0f;
     float previousOutputSample = 0.0f;
+    std::array<float, 11> targetRatioHistory {};
+    int targetRatioHistoryIndex = 0;
+    int targetRatioHistorySize = 0;
     int lastTargetMidiNote = -1;
     int activeTargetMidiNote = -1;
     int candidateTargetMidiNote = -1;
