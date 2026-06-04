@@ -5,7 +5,7 @@
 void PitchShifter::prepare (const juce::dsp::ProcessSpec& spec)
 {
     sampleRate = juce::jmax (1.0, spec.sampleRate);
-    grainLength = static_cast<float> (juce::jlimit (768, 4096, static_cast<int> (sampleRate * 0.035)));
+    grainLength = static_cast<float> (juce::jlimit (512, 1536, static_cast<int> (sampleRate * 0.015)));
     baseDelay = grainLength;
     latencySamples = static_cast<int> (baseDelay);
     delaySize = static_cast<int> (grainLength * 4.0f) + static_cast<int> (spec.maximumBlockSize) + 8;

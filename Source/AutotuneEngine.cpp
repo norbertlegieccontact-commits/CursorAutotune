@@ -105,7 +105,22 @@ AutotuneFrameData AutotuneEngine::processBlock (juce::AudioBuffer<float>& buffer
                                         : -1,
                                     numSamples);
 
-    pitchShifter.processBlock (correctedMonoBuffer.data(), numSamples, ratio);
+    const auto ratioCents = 1200.0f * std::log2 (juce::jmax (0.0001f, ratio));
+    const auto shouldCorrect = detection.voiced
+        && detection.confidence >= 0.16f
+        && std::abs (ratioCents) >= 8.0f;
+    const auto targetBlend = shouldCorrect ? 1.0f : 0.0f;
+    const auto blendTime = targetBlend > correctionBlend ? 0.012f : 0.09f;
+    const auto blendCoefficient = 1.0f - std::exp (-static_cast<float> (numSamples)
+                                                   / (static_cast<float> (sampleRate) * blendTime));
+    correctionBlend += (targetBlend - correctionBlend) * blendCoefficient;
+
+    auto effectiveRatio = correctionBlend > 0.01f ? std::pow (ratio, correctionBlend) : 1.0f;
+
+    if (std::abs (1200.0f * std::log2 (juce::jmax (0.0001f, effectiveRatio))) < 6.0f)
+        effectiveRatio = 1.0f;
+
+    pitchShifter.processBlock (correctedMonoBuffer.data(), numSamples, effectiveRatio);
 
     for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
     {
@@ -119,7 +134,7 @@ AutotuneFrameData AutotuneEngine::processBlock (juce::AudioBuffer<float>& buffer
     buffer.applyGain (outputGain);
 
     if (detection.detectedHz > 0.0f)
-        frameData.correctedHz = detection.detectedHz * ratio;
+        frameData.correctedHz = detection.detectedHz * effectiveRatio;
 
     frameData.detectedHz = detection.detectedHz;
     frameData.confidence = detection.confidence;
@@ -131,13 +146,13 @@ PitchDetectionResult AutotuneEngine::stabiliseDetection (PitchDetectionResult de
     const auto confidenceAttack = 1.0f - std::exp (-static_cast<float> (numSamples)
                                                    / (static_cast<float> (sampleRate) * 0.015f));
     const auto confidenceRelease = 1.0f - std::exp (-static_cast<float> (numSamples)
-                                                    / (static_cast<float> (sampleRate) * 0.12f));
+                                                    / (static_cast<float> (sampleRate) * 0.25f));
     const auto pitchSmoothing = 1.0f - std::exp (-static_cast<float> (numSamples)
                                                  / (static_cast<float> (sampleRate) * 0.025f));
     const auto isReliable = detection.voiced
         && detection.detectedHz >= 50.0f
         && detection.detectedHz <= 1200.0f
-        && detection.confidence >= 0.20f;
+        && detection.confidence >= 0.16f;
 
     if (isReliable)
     {
@@ -147,7 +162,7 @@ PitchDetectionResult AutotuneEngine::stabiliseDetection (PitchDetectionResult de
             smoothedDetectedHz += (detection.detectedHz - smoothedDetectedHz) * pitchSmoothing;
 
         smoothedConfidence += (detection.confidence - smoothedConfidence) * confidenceAttack;
-        pitchHoldSamplesRemaining = static_cast<int> (sampleRate * 0.08);
+        pitchHoldSamplesRemaining = static_cast<int> (sampleRate * 0.18);
     }
     else
     {
@@ -159,7 +174,7 @@ PitchDetectionResult AutotuneEngine::stabiliseDetection (PitchDetectionResult de
     stable.detectedHz = smoothedDetectedHz;
     stable.confidence = juce::jlimit (0.0f, 1.0f, smoothedConfidence);
     stable.voiced = smoothedDetectedHz > 0.0f
-        && stable.confidence >= 0.12f
+        && stable.confidence >= 0.08f
         && (isReliable || pitchHoldSamplesRemaining > 0);
 
     if (! stable.voiced && pitchHoldSamplesRemaining <= 0)
