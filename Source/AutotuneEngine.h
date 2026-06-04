@@ -49,7 +49,7 @@ public:
                                     double playheadSeconds,
                                     const GraphicalMode& graphicalMode) noexcept;
 
-    int getLatencySamples() const noexcept { return pitchShifter.getLatencySamples(); }
+    int getLatencySamples() const noexcept { return 0; }
 
 private:
     PitchDetectionResult stabiliseDetection (PitchDetectionResult detection, int numSamples) noexcept;

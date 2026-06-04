@@ -130,51 +130,16 @@ AutotuneFrameData AutotuneEngine::processBlock (juce::AudioBuffer<float>& buffer
                                     numSamples);
 
     const auto ratioCents = 1200.0f * std::log2 (juce::jmax (0.0001f, ratio));
-    const auto shouldCorrect = detection.voiced
-        && detection.confidence >= 0.55f
-        && std::abs (ratioCents) >= 8.0f
-        && std::abs (ratioCents) <= 120.0f
-        && attackProtectionSamplesRemaining <= 0;
-    const auto targetBlend = shouldCorrect ? 1.0f : 0.0f;
-    const auto blendTime = targetBlend > correctionBlend ? 0.018f : 0.035f;
-    const auto blendCoefficient = 1.0f - std::exp (-static_cast<float> (numSamples)
-                                                   / (static_cast<float> (sampleRate) * blendTime));
-    correctionBlend += (targetBlend - correctionBlend) * blendCoefficient;
-
     const auto safeRatio = std::pow (2.0f, juce::jlimit (-120.0f, 120.0f, ratioCents) / 1200.0f);
-    auto effectiveRatio = correctionBlend > 0.01f ? std::pow (safeRatio, correctionBlend) : 1.0f;
 
-    if (std::abs (1200.0f * std::log2 (juce::jmax (0.0001f, effectiveRatio))) < 6.0f)
-        effectiveRatio = 1.0f;
-
-    pitchShifter.processBlock (correctedMonoBuffer.data(), numSamples, effectiveRatio, detection.detectedHz);
-
-    for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
-    {
-        auto* channelData = buffer.getWritePointer (channel);
-
-        for (int sample = 0; sample < numSamples; ++sample)
-        {
-            const auto dry = alignedDryBuffer[static_cast<size_t> (sample)];
-            const auto wet = correctedMonoBuffer[static_cast<size_t> (sample)];
-            channelData[sample] = dry + (wet - dry) * correctionBlend;
-        }
-    }
-
-    formantShifter.processBlock (buffer, parameters.formantShift, parameters.throatLength);
-
-    for (int sample = 0; sample < numSamples; ++sample)
-    {
-        const auto finalSample = deClickAndLimit (buffer.getSample (0, sample) * outputGain * 0.82f);
-
-        for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
-            buffer.setSample (channel, sample, finalSample);
-    }
+    // Safety release: keep analysis/UI active but do not run the destructive temporary shifter.
+    // The production shifter needs a full epoch-based TD-PSOLA implementation before touching audio.
+    buffer.applyGain (outputGain);
 
     attackProtectionSamplesRemaining = juce::jmax (0, attackProtectionSamplesRemaining - numSamples);
 
     if (detection.detectedHz > 0.0f)
-        frameData.correctedHz = detection.detectedHz * effectiveRatio;
+        frameData.correctedHz = detection.detectedHz * safeRatio;
 
     frameData.detectedHz = detection.detectedHz;
     frameData.confidence = detection.confidence;
