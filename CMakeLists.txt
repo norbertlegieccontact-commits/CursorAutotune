@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(NorbyAutotune VERSION 1.0.0 LANGUAGES CXX)
+project(NorbyAutotune VERSION 1.0.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -16,6 +16,11 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(JUCE)
+
+if (UNIX AND NOT APPLE)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GTK_WEBKIT REQUIRED IMPORTED_TARGET gtk+-x11-3.0 webkit2gtk-4.1)
+endif()
 
 juce_add_plugin(NorbyAutotune
     COMPANY_NAME "VoxTune"
@@ -74,4 +79,8 @@ target_link_libraries(NorbyAutotune
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags
 )
+
+if (TARGET PkgConfig::GTK_WEBKIT)
+    target_link_libraries(NorbyAutotune PRIVATE PkgConfig::GTK_WEBKIT)
+endif()
 
