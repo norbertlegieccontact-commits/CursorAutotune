@@ -10,18 +10,31 @@ public:
 
     float processSample (float input, float pitchRatio) noexcept;
     void processBlock (float* samples, int numSamples, float pitchRatio) noexcept;
+    int getLatencySamples() const noexcept { return fifoLatency; }
 
 private:
-    float readDelay (float delaySamples) const noexcept;
-    static float grainWindow (float phase) noexcept;
+    void processFrame (float pitchRatio) noexcept;
+    void clearSpectrumBuffers() noexcept;
 
     double sampleRate = 44100.0;
-    int delaySize = 1;
-    int writeIndex = 0;
-    float grainLength = 2048.0f;
-    float baseDelay = 2048.0f;
-    float phase = 0.0f;
+    int fftOrder = 11;
+    int fftSize = 2048;
+    int hopSize = 512;
+    int oversampling = 4;
+    int fifoLatency = 1536;
+    int rover = 0;
 
-    std::vector<float> delayBuffer;
+    std::unique_ptr<juce::dsp::FFT> fft;
+    std::vector<float> inputFifo;
+    std::vector<float> outputFifo;
+    std::vector<float> outputAccum;
+    std::vector<float> fftData;
+    std::vector<float> lastPhase;
+    std::vector<float> sumPhase;
+    std::vector<float> analysisMagnitude;
+    std::vector<float> analysisFrequency;
+    std::vector<float> synthesisMagnitude;
+    std::vector<float> synthesisFrequency;
+    std::vector<float> window;
 };
 

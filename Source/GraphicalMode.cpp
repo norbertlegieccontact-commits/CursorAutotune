@@ -140,7 +140,7 @@ void GraphicalMode::sortNodes (NodeList& nodesToSort)
     std::sort (nodesToSort.begin(), nodesToSort.end(),
                [] (const auto& a, const auto& b)
                {
-                   if (a.time == b.time)
+                   if (std::abs (a.time - b.time) < 1.0e-9)
                        return a.id < b.id;
 
                    return a.time < b.time;

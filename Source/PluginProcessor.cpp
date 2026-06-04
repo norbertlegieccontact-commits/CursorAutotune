@@ -17,6 +17,7 @@ void NorbyAutotuneAudioProcessor::prepareToPlay (double sampleRate, int samplesP
     spec.numChannels = static_cast<juce::uint32> (getTotalNumOutputChannels());
 
     engine.prepare (spec);
+    setLatencySamples (engine.getLatencySamples());
 }
 
 void NorbyAutotuneAudioProcessor::releaseResources()

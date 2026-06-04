@@ -50,6 +50,8 @@ public:
                                     double playheadSeconds,
                                     const GraphicalMode& graphicalMode) noexcept;
 
+    int getLatencySamples() const noexcept { return pitchShifters.front().getLatencySamples(); }
+
 private:
     float calculateTargetRatio (const PitchDetectionResult& detection,
                                 const AutotuneParameters& parameters,
