@@ -9,9 +9,11 @@ void AutotuneEngine::prepare (const juce::dsp::ProcessSpec& spec)
 
     detector.prepare (sampleRate, 2048, 512);
     formantShifter.prepare (spec);
+    pitchShifter.prepare (spec);
 
-    for (auto& shifter : pitchShifters)
-        shifter.prepare (spec);
+    const auto scratchSize = static_cast<size_t> (juce::jmax (maximumBlockSize, 8192));
+    monoBuffer.assign (scratchSize, 0.0f);
+    correctedMonoBuffer.assign (scratchSize, 0.0f);
 
     reset();
 }
@@ -21,12 +23,14 @@ void AutotuneEngine::reset() noexcept
     detector.reset();
     midiController.reset();
     formantShifter.reset();
-
-    for (auto& shifter : pitchShifters)
-        shifter.reset();
+    pitchShifter.reset();
 
     smoothedRatio = 1.0f;
+    smoothedDetectedHz = 0.0f;
+    smoothedConfidence = 0.0f;
+    correctionBlend = 0.0f;
     lastTargetMidiNote = -1;
+    pitchHoldSamplesRemaining = 0;
     currentNoteSeconds = 0.0;
 }
 
@@ -39,10 +43,29 @@ AutotuneFrameData AutotuneEngine::processBlock (juce::AudioBuffer<float>& buffer
     AutotuneFrameData frameData;
 
     midiController.processMidi (midiMessages);
+    const auto numSamples = buffer.getNumSamples();
+
+    if (numSamples > static_cast<int> (monoBuffer.size()))
+    {
+        buffer.applyGain (juce::Decibels::decibelsToGain (parameters.inputGainDb + parameters.outputGainDb));
+        return frameData;
+    }
+
+    const auto numInputChannels = juce::jmax (1, buffer.getNumChannels());
+
+    for (int sample = 0; sample < numSamples; ++sample)
+    {
+        float mono = 0.0f;
+
+        for (int channel = 0; channel < numInputChannels; ++channel)
+            mono += buffer.getSample (channel, sample);
+
+        monoBuffer[static_cast<size_t> (sample)] = mono / static_cast<float> (numInputChannels);
+    }
 
     if (parameters.bypass)
     {
-        const auto detection = detector.processBlock (buffer.getReadPointer (0), buffer.getNumSamples());
+        const auto detection = stabiliseDetection (detector.processBlock (monoBuffer.data(), numSamples), numSamples);
         frameData.detectedHz = detection.detectedHz;
         frameData.confidence = detection.confidence;
         frameData.correctedHz = detection.detectedHz;
@@ -57,7 +80,18 @@ AutotuneFrameData AutotuneEngine::processBlock (juce::AudioBuffer<float>& buffer
 
     buffer.applyGain (inputGain);
 
-    const auto detection = detector.processBlock (buffer.getReadPointer (0), buffer.getNumSamples());
+    for (int sample = 0; sample < numSamples; ++sample)
+    {
+        float mono = 0.0f;
+
+        for (int channel = 0; channel < numInputChannels; ++channel)
+            mono += buffer.getSample (channel, sample);
+
+        monoBuffer[static_cast<size_t> (sample)] = mono / static_cast<float> (numInputChannels);
+        correctedMonoBuffer[static_cast<size_t> (sample)] = monoBuffer[static_cast<size_t> (sample)];
+    }
+
+    const auto detection = stabiliseDetection (detector.processBlock (monoBuffer.data(), numSamples), numSamples);
     auto targetRatio = calculateTargetRatio (detection, parameters, graphicalMode, playheadSeconds, frameData);
 
     const auto pitchOffsetRatio = std::pow (2.0f, parameters.pitchOffset / 12.0f);
@@ -69,14 +103,17 @@ AutotuneFrameData AutotuneEngine::processBlock (juce::AudioBuffer<float>& buffer
                                     frameData.note.isNotEmpty()
                                         ? static_cast<int> (std::round (ScaleQuantizer::hzToMidiNote (frameData.correctedHz)))
                                         : -1,
-                                    buffer.getNumSamples());
+                                    numSamples);
 
-    const auto channelsToProcess = juce::jmin (buffer.getNumChannels(), static_cast<int> (pitchShifters.size()));
+    pitchShifter.processBlock (correctedMonoBuffer.data(), numSamples, ratio);
 
-    for (int channel = 0; channel < channelsToProcess; ++channel)
-        pitchShifters[static_cast<size_t> (channel)].processBlock (buffer.getWritePointer (channel),
-                                                                   buffer.getNumSamples(),
-                                                                   ratio);
+    for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
+    {
+        auto* channelData = buffer.getWritePointer (channel);
+
+        for (int sample = 0; sample < numSamples; ++sample)
+            channelData[sample] = correctedMonoBuffer[static_cast<size_t> (sample)];
+    }
 
     formantShifter.processBlock (buffer, parameters.formantShift, parameters.throatLength);
     buffer.applyGain (outputGain);
@@ -87,6 +124,48 @@ AutotuneFrameData AutotuneEngine::processBlock (juce::AudioBuffer<float>& buffer
     frameData.detectedHz = detection.detectedHz;
     frameData.confidence = detection.confidence;
     return frameData;
+}
+
+PitchDetectionResult AutotuneEngine::stabiliseDetection (PitchDetectionResult detection, int numSamples) noexcept
+{
+    const auto confidenceAttack = 1.0f - std::exp (-static_cast<float> (numSamples)
+                                                   / (static_cast<float> (sampleRate) * 0.015f));
+    const auto confidenceRelease = 1.0f - std::exp (-static_cast<float> (numSamples)
+                                                    / (static_cast<float> (sampleRate) * 0.12f));
+    const auto pitchSmoothing = 1.0f - std::exp (-static_cast<float> (numSamples)
+                                                 / (static_cast<float> (sampleRate) * 0.025f));
+    const auto isReliable = detection.voiced
+        && detection.detectedHz >= 50.0f
+        && detection.detectedHz <= 1200.0f
+        && detection.confidence >= 0.20f;
+
+    if (isReliable)
+    {
+        if (smoothedDetectedHz <= 0.0f)
+            smoothedDetectedHz = detection.detectedHz;
+        else
+            smoothedDetectedHz += (detection.detectedHz - smoothedDetectedHz) * pitchSmoothing;
+
+        smoothedConfidence += (detection.confidence - smoothedConfidence) * confidenceAttack;
+        pitchHoldSamplesRemaining = static_cast<int> (sampleRate * 0.08);
+    }
+    else
+    {
+        smoothedConfidence += (0.0f - smoothedConfidence) * confidenceRelease;
+        pitchHoldSamplesRemaining = juce::jmax (0, pitchHoldSamplesRemaining - numSamples);
+    }
+
+    PitchDetectionResult stable;
+    stable.detectedHz = smoothedDetectedHz;
+    stable.confidence = juce::jlimit (0.0f, 1.0f, smoothedConfidence);
+    stable.voiced = smoothedDetectedHz > 0.0f
+        && stable.confidence >= 0.12f
+        && (isReliable || pitchHoldSamplesRemaining > 0);
+
+    if (! stable.voiced && pitchHoldSamplesRemaining <= 0)
+        stable.detectedHz = 0.0f;
+
+    return stable;
 }
 
 float AutotuneEngine::calculateTargetRatio (const PitchDetectionResult& detection,

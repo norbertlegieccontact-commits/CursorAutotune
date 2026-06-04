@@ -1,7 +1,6 @@
 #pragma once
 
 #include <JuceHeader.h>
-#include <array>
 
 #include "FormantShifter.h"
 #include "GraphicalMode.h"
@@ -50,9 +49,11 @@ public:
                                     double playheadSeconds,
                                     const GraphicalMode& graphicalMode) noexcept;
 
-    int getLatencySamples() const noexcept { return pitchShifters.front().getLatencySamples(); }
+    int getLatencySamples() const noexcept { return pitchShifter.getLatencySamples(); }
 
 private:
+    PitchDetectionResult stabiliseDetection (PitchDetectionResult detection, int numSamples) noexcept;
+
     float calculateTargetRatio (const PitchDetectionResult& detection,
                                 const AutotuneParameters& parameters,
                                 const GraphicalMode& graphicalMode,
@@ -68,13 +69,19 @@ private:
     double sampleRate = 44100.0;
     int maximumBlockSize = 512;
     float smoothedRatio = 1.0f;
+    float smoothedDetectedHz = 0.0f;
+    float smoothedConfidence = 0.0f;
+    float correctionBlend = 0.0f;
     int lastTargetMidiNote = -1;
+    int pitchHoldSamplesRemaining = 0;
     double currentNoteSeconds = 0.0;
 
     PitchDetector detector;
     ScaleQuantizer quantizer;
     MidiController midiController;
     FormantShifter formantShifter;
-    std::array<PitchShifter, 2> pitchShifters;
+    PitchShifter pitchShifter;
+    std::vector<float> monoBuffer;
+    std::vector<float> correctedMonoBuffer;
 };
 
