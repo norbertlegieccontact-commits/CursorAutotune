@@ -5,64 +5,39 @@
 void PitchShifter::prepare (const juce::dsp::ProcessSpec& spec)
 {
     sampleRate = juce::jmax (1.0, spec.sampleRate);
-    grainLength = static_cast<float> (juce::jlimit (384, 1024, static_cast<int> (sampleRate * 0.012)));
-    targetGrainLength = grainLength;
-    baseDelay = static_cast<float> (juce::jlimit (512, 1536, static_cast<int> (sampleRate * 0.018)));
-    latencySamples = static_cast<int> (baseDelay);
-    delaySize = static_cast<int> (baseDelay + 4096.0f) + static_cast<int> (spec.maximumBlockSize) + 8;
-    delayBuffer.assign (static_cast<size_t> (delaySize), 0.0f);
+    latencySamples = static_cast<int> (juce::jlimit (1024, 4096, static_cast<int> (sampleRate * 0.045)));
+    maxGrainRadius = static_cast<int> (juce::jlimit (512, 2048, static_cast<int> (sampleRate * 0.025)));
+    ringSize = juce::nextPowerOfTwo (latencySamples + maxGrainRadius * 4 + static_cast<int> (spec.maximumBlockSize) * 4 + 8);
+
+    inputRing.assign (static_cast<size_t> (ringSize), 0.0f);
+    dryRing.assign (static_cast<size_t> (ringSize), 0.0f);
+    outputRing.assign (static_cast<size_t> (ringSize), 0.0f);
+    weightRing.assign (static_cast<size_t> (ringSize), 0.0f);
 
     reset();
 }
 
 void PitchShifter::reset() noexcept
 {
-    std::fill (delayBuffer.begin(), delayBuffer.end(), 0.0f);
-    writeIndex = 0;
-    phase = 0.0f;
+    std::fill (inputRing.begin(), inputRing.end(), 0.0f);
+    std::fill (dryRing.begin(), dryRing.end(), 0.0f);
+    std::fill (outputRing.begin(), outputRing.end(), 0.0f);
+    std::fill (weightRing.begin(), weightRing.end(), 0.0f);
+    epochHistory.fill (0);
+    epochWriteIndex = 0;
+    epochCount = 0;
+    currentSample = 0;
+    nextAnalysisEpoch = 0;
+    nextSynthesisEpoch = static_cast<double> (latencySamples);
+    previousPeriodSamples = 0.0f;
+    previousPitchRatio = 1.0f;
 }
 
 float PitchShifter::processSample (float input, float pitchRatio) noexcept
 {
-    if (delayBuffer.empty())
-        return input;
-
-    pitchRatio = juce::jlimit (0.5f, 2.0f, pitchRatio);
-
-    delayBuffer[static_cast<size_t> (writeIndex)] = input;
-
-    if (std::abs (pitchRatio - 1.0f) < 0.0005f)
-    {
-        const auto output = readDelay (baseDelay);
-        writeIndex = (writeIndex + 1) % delaySize;
-        return output;
-    }
-
-    const auto phaseIncrement = (1.0f - pitchRatio) / grainLength;
-    phase += phaseIncrement;
-
-    while (phase < 0.0f)
-        phase += 1.0f;
-
-    while (phase >= 1.0f)
-        phase -= 1.0f;
-
-    auto phaseA = phase;
-    auto phaseB = phase + 0.5f;
-
-    if (phaseB >= 1.0f)
-        phaseB -= 1.0f;
-
-    const auto delayA = baseDelay + phaseA * grainLength;
-    const auto delayB = baseDelay + phaseB * grainLength;
-    const auto weightA = grainWindow (phaseA);
-    const auto weightB = grainWindow (phaseB);
-    const auto normaliser = juce::jmax (0.0001f, weightA + weightB);
-
-    const auto output = (readDelay (delayA) * weightA + readDelay (delayB) * weightB) / normaliser;
-
-    writeIndex = (writeIndex + 1) % delaySize;
-    return output;
+    float sample = input;
+    processBlock (&sample, 1, pitchRatio, 0.0f);
+    return sample;
 }
 
 void PitchShifter::processBlock (float* samples, int numSamples, float pitchRatio) noexcept
@@ -72,49 +47,176 @@ void PitchShifter::processBlock (float* samples, int numSamples, float pitchRati
 
 void PitchShifter::processBlock (float* samples, int numSamples, float pitchRatio, float detectedPitchHz) noexcept
 {
-    if (samples == nullptr)
+    if (samples == nullptr || inputRing.empty() || numSamples <= 0)
         return;
 
-    updatePitchSynchronousWindow (detectedPitchHz);
+    const auto blockStart = currentSample;
+    const auto blockEnd = blockStart + numSamples;
+    const auto validPitch = detectedPitchHz >= 55.0f && detectedPitchHz <= 1000.0f;
+    const auto periodSamples = validPitch ? static_cast<float> (sampleRate / detectedPitchHz) : 0.0f;
+    const auto ratioCents = 1200.0f * std::log2 (juce::jmax (0.0001f, pitchRatio));
+    const auto active = validPitch
+        && periodSamples >= 44.0f
+        && periodSamples <= 802.0f
+        && std::abs (ratioCents) >= 5.0f
+        && std::abs (ratioCents) <= 180.0f;
 
     for (int i = 0; i < numSamples; ++i)
     {
-        grainLength += (targetGrainLength - grainLength) * 0.0015f;
-        samples[i] = processSample (samples[i], pitchRatio);
-    }
-}
+        const auto absoluteSample = blockStart + i;
+        const auto ringIndex = static_cast<int> (absoluteSample & (ringSize - 1));
+        inputRing[static_cast<size_t> (ringIndex)] = samples[i];
+        dryRing[static_cast<size_t> (ringIndex)] = samples[i];
 
-void PitchShifter::updatePitchSynchronousWindow (float detectedPitchHz) noexcept
-{
-    if (detectedPitchHz >= 55.0f && detectedPitchHz <= 1200.0f)
+        const auto weight = weightRing[static_cast<size_t> (ringIndex)];
+        const auto olaSample = weight > 0.0001f
+            ? outputRing[static_cast<size_t> (ringIndex)] / weight
+            : readDryAt (absoluteSample - latencySamples);
+
+        samples[i] = active ? olaSample : readDryAt (absoluteSample - latencySamples);
+
+        outputRing[static_cast<size_t> (ringIndex)] = 0.0f;
+        weightRing[static_cast<size_t> (ringIndex)] = 0.0f;
+    }
+
+    currentSample = blockEnd;
+
+    if (! active)
     {
-        const auto periodSamples = static_cast<float> (sampleRate) / detectedPitchHz;
-        targetGrainLength = static_cast<float> (juce::jlimit (192, 1152, static_cast<int> (periodSamples * 2.5f)));
+        previousPeriodSamples = 0.0f;
+        previousPitchRatio = 1.0f;
+        nextSynthesisEpoch = static_cast<double> (blockEnd + latencySamples);
+        nextAnalysisEpoch = blockEnd;
+        return;
     }
-    else
+
+    if (previousPeriodSamples <= 0.0f
+        || std::abs (periodSamples - previousPeriodSamples) > previousPeriodSamples * 0.35f
+        || std::abs (pitchRatio - previousPitchRatio) > 0.08f)
     {
-        targetGrainLength = static_cast<float> (juce::jlimit (384, 1024, static_cast<int> (sampleRate * 0.012)));
+        nextAnalysisEpoch = blockStart;
+        nextSynthesisEpoch = static_cast<double> (blockStart + latencySamples);
+    }
+
+    previousPeriodSamples = periodSamples;
+    previousPitchRatio = pitchRatio;
+
+    detectEpochs (blockStart, blockEnd, periodSamples);
+    scheduleSynthesisGrains (blockStart, blockEnd, pitchRatio, periodSamples);
+}
+
+void PitchShifter::detectEpochs (int64 blockStart, int64 blockEnd, float periodSamples) noexcept
+{
+    const auto searchRadius = static_cast<int64> (juce::jlimit (8, 128, static_cast<int> (periodSamples * 0.28f)));
+
+    if (nextAnalysisEpoch <= 0 || nextAnalysisEpoch < blockStart - static_cast<int64> (periodSamples))
+        nextAnalysisEpoch = blockStart + static_cast<int64> (periodSamples * 0.5f);
+
+    while (nextAnalysisEpoch < blockEnd)
+    {
+        const auto start = juce::jmax (blockStart, nextAnalysisEpoch - searchRadius);
+        const auto end = juce::jmin (blockEnd - 1, nextAnalysisEpoch + searchRadius);
+        auto bestPosition = nextAnalysisEpoch;
+        auto bestValue = 0.0f;
+
+        for (auto sample = start; sample <= end; ++sample)
+        {
+            const auto previous = readInputAt (sample - 1);
+            const auto current = readInputAt (sample);
+            const auto next = readInputAt (sample + 1);
+            const auto isPeak = current >= previous && current >= next;
+            const auto value = isPeak ? std::abs (current) : std::abs (current) * 0.35f;
+
+            if (value > bestValue)
+            {
+                bestValue = value;
+                bestPosition = sample;
+            }
+        }
+
+        if (bestValue > 0.004f)
+        {
+            epochHistory[static_cast<size_t> (epochWriteIndex)] = bestPosition;
+            epochWriteIndex = (epochWriteIndex + 1) % static_cast<int> (epochHistory.size());
+            epochCount = juce::jmin (epochCount + 1, static_cast<int> (epochHistory.size()));
+        }
+
+        nextAnalysisEpoch = bestPosition + static_cast<int64> (periodSamples);
     }
 }
 
-float PitchShifter::readDelay (float delaySamples) const noexcept
+void PitchShifter::scheduleSynthesisGrains (int64 blockStart, int64 blockEnd, float pitchRatio, float periodSamples) noexcept
 {
-    const auto readPosition = static_cast<float> (writeIndex) - delaySamples;
-    auto wrappedPosition = std::fmod (readPosition, static_cast<float> (delaySize));
+    const auto targetPeriod = periodSamples / juce::jlimit (0.8f, 1.25f, pitchRatio);
+    const auto outputStart = static_cast<double> (blockStart + latencySamples);
+    const auto outputEnd = static_cast<double> (blockEnd + latencySamples);
+    const auto grainRadius = juce::jlimit (48, maxGrainRadius, static_cast<int> (periodSamples * 1.15f));
 
-    if (wrappedPosition < 0.0f)
-        wrappedPosition += static_cast<float> (delaySize);
+    if (nextSynthesisEpoch < outputStart - targetPeriod)
+        nextSynthesisEpoch = outputStart;
 
-    const auto index0 = static_cast<int> (wrappedPosition);
-    const auto index1 = (index0 + 1) % delaySize;
-    const auto fraction = wrappedPosition - static_cast<float> (index0);
+    while (nextSynthesisEpoch < outputEnd)
+    {
+        const auto synthesisEpoch = static_cast<int64> (std::llround (nextSynthesisEpoch));
+        const auto analysisTarget = synthesisEpoch - latencySamples;
+        const auto analysisEpoch = findNearestEpoch (analysisTarget, periodSamples * 0.65f);
 
-    return delayBuffer[static_cast<size_t> (index0)]
-        + (delayBuffer[static_cast<size_t> (index1)] - delayBuffer[static_cast<size_t> (index0)]) * fraction;
+        if (analysisEpoch >= 0)
+            addGrain (analysisEpoch, synthesisEpoch, grainRadius);
+
+        nextSynthesisEpoch += targetPeriod;
+    }
 }
 
-float PitchShifter::grainWindow (float phase) noexcept
+void PitchShifter::addGrain (int64 analysisEpoch, int64 synthesisEpoch, int grainRadius) noexcept
 {
+    for (int offset = -grainRadius; offset <= grainRadius; ++offset)
+    {
+        const auto outputSample = synthesisEpoch + offset;
+        const auto outputIndex = static_cast<int> (outputSample & (ringSize - 1));
+        const auto window = hannWindow (offset, grainRadius);
+        const auto input = readInputAt (analysisEpoch + offset);
+
+        outputRing[static_cast<size_t> (outputIndex)] += input * window;
+        weightRing[static_cast<size_t> (outputIndex)] += window;
+    }
+}
+
+int64 PitchShifter::findNearestEpoch (int64 target, float maxDistance) const noexcept
+{
+    auto bestEpoch = static_cast<int64> (-1);
+    auto bestDistance = static_cast<int64> (maxDistance) + 1;
+
+    for (int i = 0; i < epochCount; ++i)
+    {
+        const auto index = (epochWriteIndex - 1 - i + static_cast<int> (epochHistory.size()))
+            % static_cast<int> (epochHistory.size());
+        const auto epoch = epochHistory[static_cast<size_t> (index)];
+        const auto distance = std::llabs (epoch - target);
+
+        if (distance < bestDistance)
+        {
+            bestDistance = distance;
+            bestEpoch = epoch;
+        }
+    }
+
+    return bestEpoch;
+}
+
+float PitchShifter::readInputAt (int64 absoluteSample) const noexcept
+{
+    return inputRing[static_cast<size_t> (absoluteSample & (ringSize - 1))];
+}
+
+float PitchShifter::readDryAt (int64 absoluteSample) const noexcept
+{
+    return dryRing[static_cast<size_t> (absoluteSample & (ringSize - 1))];
+}
+
+float PitchShifter::hannWindow (int offset, int radius) noexcept
+{
+    const auto phase = (static_cast<float> (offset + radius) / static_cast<float> (radius * 2));
     return 0.5f - 0.5f * std::cos (juce::MathConstants<float>::twoPi * phase);
 }
 
