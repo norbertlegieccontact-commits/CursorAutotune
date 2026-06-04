@@ -53,11 +53,16 @@ public:
 
 private:
     PitchDetectionResult stabiliseDetection (PitchDetectionResult detection, int numSamples) noexcept;
+    void updateOnsetState (float blockRms, int numSamples) noexcept;
+    int stabiliseTargetMidiNote (int proposedMidiNote, int numSamples) noexcept;
+    float deClickAndLimit (float sample) noexcept;
+    static float softLimit (float sample) noexcept;
 
     float calculateTargetRatio (const PitchDetectionResult& detection,
                                 const AutotuneParameters& parameters,
                                 const GraphicalMode& graphicalMode,
                                 double playheadSeconds,
+                                int numSamples,
                                 AutotuneFrameData& frameData) noexcept;
 
     float smoothRatio (float targetRatio,
@@ -72,7 +77,13 @@ private:
     float smoothedDetectedHz = 0.0f;
     float smoothedConfidence = 0.0f;
     float correctionBlend = 0.0f;
+    float inputLevelEnvelope = 0.0f;
+    float previousOutputSample = 0.0f;
     int lastTargetMidiNote = -1;
+    int activeTargetMidiNote = -1;
+    int candidateTargetMidiNote = -1;
+    int candidateTargetSamples = 0;
+    int attackProtectionSamplesRemaining = 0;
     int pitchHoldSamplesRemaining = 0;
     double currentNoteSeconds = 0.0;
 

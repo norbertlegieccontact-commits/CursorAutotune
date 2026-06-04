@@ -29,7 +29,13 @@ void AutotuneEngine::reset() noexcept
     smoothedDetectedHz = 0.0f;
     smoothedConfidence = 0.0f;
     correctionBlend = 0.0f;
+    inputLevelEnvelope = 0.0f;
+    previousOutputSample = 0.0f;
     lastTargetMidiNote = -1;
+    activeTargetMidiNote = -1;
+    candidateTargetMidiNote = -1;
+    candidateTargetSamples = 0;
+    attackProtectionSamplesRemaining = 0;
     pitchHoldSamplesRemaining = 0;
     currentNoteSeconds = 0.0;
 }
@@ -53,6 +59,8 @@ AutotuneFrameData AutotuneEngine::processBlock (juce::AudioBuffer<float>& buffer
 
     const auto numInputChannels = juce::jmax (1, buffer.getNumChannels());
 
+    double sumSquares = 0.0;
+
     for (int sample = 0; sample < numSamples; ++sample)
     {
         float mono = 0.0f;
@@ -61,7 +69,11 @@ AutotuneFrameData AutotuneEngine::processBlock (juce::AudioBuffer<float>& buffer
             mono += buffer.getSample (channel, sample);
 
         monoBuffer[static_cast<size_t> (sample)] = mono / static_cast<float> (numInputChannels);
+        sumSquares += static_cast<double> (monoBuffer[static_cast<size_t> (sample)])
+            * monoBuffer[static_cast<size_t> (sample)];
     }
+
+    updateOnsetState (static_cast<float> (std::sqrt (sumSquares / juce::jmax (1, numSamples))), numSamples);
 
     if (parameters.bypass)
     {
@@ -80,6 +92,8 @@ AutotuneFrameData AutotuneEngine::processBlock (juce::AudioBuffer<float>& buffer
 
     buffer.applyGain (inputGain);
 
+    sumSquares = 0.0;
+
     for (int sample = 0; sample < numSamples; ++sample)
     {
         float mono = 0.0f;
@@ -89,10 +103,14 @@ AutotuneFrameData AutotuneEngine::processBlock (juce::AudioBuffer<float>& buffer
 
         monoBuffer[static_cast<size_t> (sample)] = mono / static_cast<float> (numInputChannels);
         correctedMonoBuffer[static_cast<size_t> (sample)] = monoBuffer[static_cast<size_t> (sample)];
+        sumSquares += static_cast<double> (monoBuffer[static_cast<size_t> (sample)])
+            * monoBuffer[static_cast<size_t> (sample)];
     }
 
+    updateOnsetState (static_cast<float> (std::sqrt (sumSquares / juce::jmax (1, numSamples))), numSamples);
+
     const auto detection = stabiliseDetection (detector.processBlock (monoBuffer.data(), numSamples), numSamples);
-    auto targetRatio = calculateTargetRatio (detection, parameters, graphicalMode, playheadSeconds, frameData);
+    auto targetRatio = calculateTargetRatio (detection, parameters, graphicalMode, playheadSeconds, numSamples, frameData);
 
     const auto pitchOffsetRatio = std::pow (2.0f, parameters.pitchOffset / 12.0f);
     targetRatio *= pitchOffsetRatio;
@@ -108,9 +126,10 @@ AutotuneFrameData AutotuneEngine::processBlock (juce::AudioBuffer<float>& buffer
     const auto ratioCents = 1200.0f * std::log2 (juce::jmax (0.0001f, ratio));
     const auto shouldCorrect = detection.voiced
         && detection.confidence >= 0.16f
-        && std::abs (ratioCents) >= 8.0f;
+        && std::abs (ratioCents) >= 8.0f
+        && attackProtectionSamplesRemaining <= 0;
     const auto targetBlend = shouldCorrect ? 1.0f : 0.0f;
-    const auto blendTime = targetBlend > correctionBlend ? 0.012f : 0.09f;
+    const auto blendTime = targetBlend > correctionBlend ? 0.018f : 0.035f;
     const auto blendCoefficient = 1.0f - std::exp (-static_cast<float> (numSamples)
                                                    / (static_cast<float> (sampleRate) * blendTime));
     correctionBlend += (targetBlend - correctionBlend) * blendCoefficient;
@@ -127,11 +146,24 @@ AutotuneFrameData AutotuneEngine::processBlock (juce::AudioBuffer<float>& buffer
         auto* channelData = buffer.getWritePointer (channel);
 
         for (int sample = 0; sample < numSamples; ++sample)
-            channelData[sample] = correctedMonoBuffer[static_cast<size_t> (sample)];
+        {
+            const auto dry = monoBuffer[static_cast<size_t> (sample)];
+            const auto wet = correctedMonoBuffer[static_cast<size_t> (sample)];
+            channelData[sample] = dry + (wet - dry) * correctionBlend;
+        }
     }
 
     formantShifter.processBlock (buffer, parameters.formantShift, parameters.throatLength);
-    buffer.applyGain (outputGain);
+
+    for (int sample = 0; sample < numSamples; ++sample)
+    {
+        const auto finalSample = deClickAndLimit (buffer.getSample (0, sample) * outputGain);
+
+        for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
+            buffer.setSample (channel, sample, finalSample);
+    }
+
+    attackProtectionSamplesRemaining = juce::jmax (0, attackProtectionSamplesRemaining - numSamples);
 
     if (detection.detectedHz > 0.0f)
         frameData.correctedHz = detection.detectedHz * effectiveRatio;
@@ -139,6 +171,85 @@ AutotuneFrameData AutotuneEngine::processBlock (juce::AudioBuffer<float>& buffer
     frameData.detectedHz = detection.detectedHz;
     frameData.confidence = detection.confidence;
     return frameData;
+}
+
+void AutotuneEngine::updateOnsetState (float blockRms, int numSamples) noexcept
+{
+    const auto attackCoefficient = 1.0f - std::exp (-static_cast<float> (numSamples)
+                                                    / (static_cast<float> (sampleRate) * 0.006f));
+    const auto releaseCoefficient = 1.0f - std::exp (-static_cast<float> (numSamples)
+                                                     / (static_cast<float> (sampleRate) * 0.08f));
+    const auto coefficient = blockRms > inputLevelEnvelope ? attackCoefficient : releaseCoefficient;
+    const auto previousEnvelope = inputLevelEnvelope;
+    inputLevelEnvelope += (blockRms - inputLevelEnvelope) * coefficient;
+
+    const auto onsetThreshold = previousEnvelope * 1.75f + 0.018f;
+
+    if (blockRms > onsetThreshold)
+        attackProtectionSamplesRemaining = static_cast<int> (sampleRate * 0.065);
+}
+
+int AutotuneEngine::stabiliseTargetMidiNote (int proposedMidiNote, int numSamples) noexcept
+{
+    if (proposedMidiNote < 0)
+        return proposedMidiNote;
+
+    if (activeTargetMidiNote < 0)
+    {
+        activeTargetMidiNote = proposedMidiNote;
+        candidateTargetMidiNote = proposedMidiNote;
+        candidateTargetSamples = 0;
+        return activeTargetMidiNote;
+    }
+
+    if (proposedMidiNote == activeTargetMidiNote)
+    {
+        candidateTargetMidiNote = proposedMidiNote;
+        candidateTargetSamples = 0;
+        return activeTargetMidiNote;
+    }
+
+    if (proposedMidiNote != candidateTargetMidiNote)
+    {
+        candidateTargetMidiNote = proposedMidiNote;
+        candidateTargetSamples = 0;
+        return activeTargetMidiNote;
+    }
+
+    candidateTargetSamples += numSamples;
+
+    if (candidateTargetSamples >= static_cast<int> (sampleRate * 0.045))
+    {
+        activeTargetMidiNote = candidateTargetMidiNote;
+        candidateTargetSamples = 0;
+        attackProtectionSamplesRemaining = juce::jmax (attackProtectionSamplesRemaining,
+                                                       static_cast<int> (sampleRate * 0.05));
+    }
+
+    return activeTargetMidiNote;
+}
+
+float AutotuneEngine::deClickAndLimit (float sample) noexcept
+{
+    const auto maxStep = 0.18f;
+    const auto delta = juce::jlimit (-maxStep, maxStep, sample - previousOutputSample);
+    const auto deClicked = previousOutputSample + delta;
+    const auto limited = softLimit (deClicked);
+    previousOutputSample = limited;
+    return limited;
+}
+
+float AutotuneEngine::softLimit (float sample) noexcept
+{
+    const auto threshold = 0.90f;
+    const auto absSample = std::abs (sample);
+
+    if (absSample <= threshold)
+        return sample;
+
+    const auto sign = sample >= 0.0f ? 1.0f : -1.0f;
+    const auto over = absSample - threshold;
+    return sign * (threshold + (1.0f - threshold) * (1.0f - std::exp (-over / (1.0f - threshold))));
 }
 
 PitchDetectionResult AutotuneEngine::stabiliseDetection (PitchDetectionResult detection, int numSamples) noexcept
@@ -187,6 +298,7 @@ float AutotuneEngine::calculateTargetRatio (const PitchDetectionResult& detectio
                                             const AutotuneParameters& parameters,
                                             const GraphicalMode& graphicalMode,
                                             double playheadSeconds,
+                                            int numSamples,
                                             AutotuneFrameData& frameData) noexcept
 {
     frameData.detectedHz = detection.detectedHz;
@@ -233,6 +345,13 @@ float AutotuneEngine::calculateTargetRatio (const PitchDetectionResult& detectio
 
     if (targetHz <= 0.0f)
         return 1.0f;
+
+    if (targetMidi >= 0)
+    {
+        targetMidi = stabiliseTargetMidiNote (targetMidi, numSamples);
+        targetHz = ScaleQuantizer::midiNoteToHz (static_cast<float> (targetMidi));
+        noteName = ScaleQuantizer::midiNoteName (targetMidi);
+    }
 
     const auto fullCorrectionRatio = targetHz / detection.detectedHz;
     const auto flexDepth = juce::jlimit (0.0f, 1.0f, 1.0f - parameters.flexTune / 100.0f);
