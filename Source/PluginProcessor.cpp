@@ -207,9 +207,9 @@ AutotuneParameters NorbyAutotuneAudioProcessor::readParameters() const noexcept
 
 double NorbyAutotuneAudioProcessor::getPlayheadSeconds() const
 {
-    if (auto* playHead = getPlayHead())
+    if (auto* hostPlayHead = getPlayHead())
     {
-        if (const auto position = playHead->getPosition())
+        if (const auto position = hostPlayHead->getPosition())
         {
             if (const auto timeInSeconds = position->getTimeInSeconds())
                 return *timeInSeconds;

@@ -9,7 +9,7 @@ class NorbyAutotuneAudioProcessorEditor final : public juce::AudioProcessorEdito
                                                private juce::Timer
 {
 public:
-    explicit NorbyAutotuneAudioProcessorEditor (NorbyAutotuneAudioProcessor& processor);
+    explicit NorbyAutotuneAudioProcessorEditor (NorbyAutotuneAudioProcessor& ownerProcessor);
     ~NorbyAutotuneAudioProcessorEditor() override = default;
 
     void resized() override;

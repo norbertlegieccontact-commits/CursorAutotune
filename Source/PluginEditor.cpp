@@ -40,9 +40,9 @@ juce::String makeCustomEventScript (const juce::String& eventName, const juce::v
 }
 }
 
-NorbyAutotuneAudioProcessorEditor::NorbyAutotuneAudioProcessorEditor (NorbyAutotuneAudioProcessor& processor)
-    : AudioProcessorEditor (&processor),
-      audioProcessor (processor),
+NorbyAutotuneAudioProcessorEditor::NorbyAutotuneAudioProcessorEditor (NorbyAutotuneAudioProcessor& ownerProcessor)
+    : AudioProcessorEditor (&ownerProcessor),
+      audioProcessor (ownerProcessor),
       webView (juce::WebBrowserComponent::Options {}
                    .withNativeIntegrationEnabled()
                    .withKeepPageLoadedWhenBrowserIsHidden()
