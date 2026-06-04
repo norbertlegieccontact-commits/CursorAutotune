@@ -1,0 +1,195 @@
+---
+description: "NØRBY Autotune Plugin project architecture, DSP, threading, parameter, WebView, and build rules."
+globs:
+  - "**/*"
+alwaysApply: true
+---
+
+# NØRBY Autotune Plugin Rules
+
+## Project overview
+
+Build a professional real-time vocal pitch correction plugin with Auto-Tune Pro feature parity under the VoxTune brand.
+
+- Framework: JUCE 8.0.12.
+- Language: C++17.
+- UI: JUCE 8 WebView rendering user-supplied HTML/CSS/JS from `BinaryData`.
+- Plugin formats: AU on macOS, VST3 on macOS and Windows.
+- Platforms: macOS 10.13+ universal (`x86_64` + `arm64`), Windows 10/11 64-bit.
+- Build generators: Projucer projects for Xcode and Visual Studio 2022.
+
+Do not generate or modify UI HTML/CSS/JS unless explicitly asked.
+
+## Expected source layout
+
+Keep implementation aligned with this structure:
+
+- `PluginProcessor.h` / `PluginProcessor.cpp`: `AudioProcessor`, APVTS parameter layout, state.
+- `PluginEditor.h` / `PluginEditor.cpp`: WebView editor, JavaScript bridge.
+- `PitchDetector.h` / `PitchDetector.cpp`: pitch detection engine using YIN or MPM fallback.
+- `PitchShifter.h` / `PitchShifter.cpp`: pitch shifting engine using phase vocoder or PSOLA.
+- `AutotuneEngine.h` / `AutotuneEngine.cpp`: detection -> correction -> output orchestration.
+- `ScaleQuantizer.h` / `ScaleQuantizer.cpp`: key/scale logic and note quantization.
+- `FormantShifter.h` / `FormantShifter.cpp`: formant preservation and shifting.
+- `GraphicalMode.h` / `GraphicalMode.cpp`: graphical mode envelope, node editing, playback.
+- `MidiController.h` / `MidiController.cpp`: MIDI pitch control, throat length, vibrato.
+- `BinaryData/`: embedded user-supplied UI assets.
+
+## Required JUCE modules
+
+Use these modules as the baseline:
+
+- `juce_audio_basics`
+- `juce_audio_devices`
+- `juce_audio_formats`
+- `juce_audio_plugin_client`
+- `juce_audio_processors`
+- `juce_audio_utils`
+- `juce_core`
+- `juce_dsp`
+- `juce_events`
+- `juce_graphics`
+- `juce_gui_basics`
+- `juce_gui_extra` for `juce::WebBrowserComponent`
+
+## DSP architecture
+
+### Pitch detection
+
+- Implement YIN pitch detection from de Cheveigné and Kawahara, 2002.
+- Minimum analysis buffer size: 2048 samples for accuracy below 80 Hz.
+- Confidence threshold: YIN difference threshold `0.15`.
+- Fallback to autocorrelation or MPM when YIN confidence is inadequate or input is complex.
+- Output detected frequency in Hz and normalized confidence from `0.0` to `1.0`.
+
+### Pitch shifting
+
+- Primary shifter: phase vocoder / STFT.
+- Secondary low-latency shifter: TD-PSOLA when Retune Speed is instant or low-latency mode is enabled.
+- Use `juce::dsp::FFT` for all FFT operations.
+- Default FFT size: 2048.
+- Default hop size: 512.
+- Overlap factor: 4.
+- Add phase locking on transients to reduce phasiness.
+- Formant correction uses LPC envelope extraction and shifts formants independently from pitch.
+
+### Auto mode behavior
+
+- `retune_speed`: `0` is instant snap, `100` is slow/natural.
+- `humanize`: varies correction speed based on note duration; long notes retune slower.
+- `natural_vibrato`: preserves detected vibrato above threshold.
+- `flex_tune`: controls continuous pitch correction versus hard snapping.
+
+### Graphical mode behavior
+
+- Sync the internal timeline to host transport using `AudioPlayHead`.
+- Store pitch envelope nodes with `{ time, detectedHz, correctedHz }`.
+- Support add, move, delete, and clear operations plus curved segments between nodes.
+- During playback, interpolate corrected pitch from the node timeline in real time.
+
+### Key and scale
+
+Use these project enums:
+
+```cpp
+enum class Key { C, Cs, D, Ds, E, F, Fs, G, Gs, A, As, B, Chromatic };
+enum class Scale { Major, Minor, Dorian, Phrygian, Lydian, Mixolydian,
+                   Locrian, HarmonicMinor, MelodicMinor, PentatonicMajor,
+                   PentatonicMinor, Blues, Chromatic };
+```
+
+- Quantize detected pitch to the nearest scale degree in cents.
+- Bypass quantization when confidence is below the voiced confidence threshold.
+
+## Parameters
+
+Use `AudioProcessorValueTreeState` for every automatable parameter. Parameter IDs are snake_case strings and must match JavaScript event names exactly.
+
+| ID | Type | Range | Default |
+| --- | --- | --- | --- |
+| `retune_speed` | float | `0` to `100` | `20` |
+| `flex_tune` | float | `0` to `100` | `0` |
+| `humanize` | float | `0` to `100` | `0` |
+| `natural_vibrato` | float | `0` to `100` | `0` |
+| `key` | int | `0` to `12` | `0` (`C`) |
+| `scale` | int | `0` to `13` | `0` (`Major`) |
+| `formant_shift` | float | `-2.0` to `2.0` octaves | `0.0` |
+| `throat_length` | float | `-100` to `100` | `0` |
+| `pitch_offset` | float | `-2.0` to `2.0` semitones | `0.0` |
+| `low_latency_mode` | bool | off/on | `false` |
+| `midi_control` | bool | off/on | `false` |
+| `target_note_midi` | int | `0` to `127`, with `-1` meaning off | `-1` |
+| `input_gain` | float | `-24` to `24` dB | `0` |
+| `output_gain` | float | `-24` to `24` dB | `0` |
+| `bypass` | bool | off/on | `false` |
+| `mode` | int | `0` auto, `1` graph | `0` |
+
+All parameter changes must go through APVTS listeners and host-undoable APVTS mechanisms. Do not use raw parameter storage as the source of truth.
+
+`getStateInformation` and `setStateInformation` must save and restore the full APVTS state plus graphical mode nodes.
+
+## WebView bridge
+
+- Render UI with `juce::WebBrowserComponent`.
+- Treat HTML/CSS/JS as supplied assets embedded through `BinaryData`.
+- JavaScript to C++ messages use:
+
+```js
+window.__JUCE__.postMessage(JSON.stringify({ eventId, payload }))
+```
+
+- C++ to JavaScript messages use `webView.evaluateJavascript("window.dispatchEvent(...)")`.
+- Send detection output to JavaScript around 30 fps from a message-thread `Timer` or `AsyncUpdater`, never directly from the audio thread.
+
+### JavaScript to C++ events
+
+- `set_parameter` with `{ name: string, value: number }`
+- `request_state` with `{}`
+- `add_node` with `{ time: number, hz: number }`
+- `move_node` with `{ id: number, time: number, hz: number }`
+- `delete_node` with `{ id: number }`
+- `clear_nodes` with `{}`
+- `open_website` with `{ url: string }`
+- `check_updates` with `{}`
+
+### C++ to JavaScript events
+
+- `parameter_changed` with `{ name: string, value: number }`
+- `pitch_data` with `{ detectedHz: number, correctedHz: number, confidence: number, note: string }`
+- `playhead_position` with `{ ppq: number, isPlaying: bool }`
+- `node_list` with `{ nodes: [{ id, time, hz }] }`
+- `version_info` with `{ version: string, hasUpdate: bool }`
+
+## Real-time safety and threading
+
+- Audio-thread DSP must perform zero heap allocations, zero blocking locks, zero logging, and zero file/network/UI work.
+- Do not call `std::vector::push_back` or other capacity-changing container operations on the audio thread. Preallocate buffers in `prepareToPlay`.
+- Use `juce::AbstractFifo` for audio-to-UI or UI-to-audio transfer when a queue is needed.
+- Pitch detection runs in parallel with pitch shifting using lock-free or double-buffered handoff.
+- Use `juce::dsp::ProcessSpec` in every DSP module's `prepare()` method.
+- Recalculate filters, timing constants, FFT-dependent buffers, and sample-rate-dependent coefficients when `prepareToPlay` is called.
+- Message thread owns UI updates and host/JS-originated parameter changes.
+- Use copy-on-write for graphical mode node editing. Never mutate the node list on the audio thread.
+- Avoid mutexes on the audio thread. `juce::SpinLock` is allowed only when absolutely necessary and with a bounded, tiny critical section.
+
+## Coding rules
+
+- Use modern RAII; do not use raw `new` or `delete`.
+- Do not use `std::cout`. Use `DBG()` only in debug-only, non-audio-thread code.
+- Keep DSP code exception-free and compatible with `-fno-exceptions`.
+- Do not hardcode sample rates. Use values from `prepareToPlay` / `juce::dsp::ProcessSpec`.
+- Avoid deprecated JUCE APIs; check JUCE 8 behavior when in doubt.
+- Preserve commercial plugin quality: deterministic state restore, host automation correctness, real-time safety, and `pluginval` strictness level 5 readiness.
+
+## Build and release constraints
+
+- C++ standard: C++17.
+- macOS deployment target: 10.13 or newer.
+- macOS binary must be universal for `x86_64` and `arm64`.
+- Windows target: Windows 10 SDK, 64-bit only, Visual Studio 2022.
+- Plugin must pass `pluginval` at strictness level 5 before release.
+- Company: VoxTune / NØRBY.
+- Bundle ID prefix: `com.voxtune`.
+- Version: `1.0.0`.
+- Plugin name and support URLs are set by the user.
+
