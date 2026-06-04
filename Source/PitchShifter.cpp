@@ -58,8 +58,8 @@ void PitchShifter::processBlock (float* samples, int numSamples, float pitchRati
     const auto active = validPitch
         && periodSamples >= 44.0f
         && periodSamples <= 802.0f
-        && std::abs (ratioCents) >= 5.0f
-        && std::abs (ratioCents) <= 180.0f;
+        && std::abs (ratioCents) >= 2.0f
+        && std::abs (ratioCents) <= 600.0f;
 
     for (int i = 0; i < numSamples; ++i)
     {
@@ -147,7 +147,7 @@ void PitchShifter::detectEpochs (int64 blockStart, int64 blockEnd, float periodS
 
 void PitchShifter::scheduleSynthesisGrains (int64 blockStart, int64 blockEnd, float pitchRatio, float periodSamples) noexcept
 {
-    const auto targetPeriod = periodSamples / juce::jlimit (0.8f, 1.25f, pitchRatio);
+    const auto targetPeriod = periodSamples / juce::jlimit (0.7071f, 1.4142f, pitchRatio);
     const auto outputStart = static_cast<double> (blockStart + latencySamples);
     const auto outputEnd = static_cast<double> (blockEnd + latencySamples);
     const auto grainRadius = juce::jlimit (48, maxGrainRadius, static_cast<int> (periodSamples * 1.15f));

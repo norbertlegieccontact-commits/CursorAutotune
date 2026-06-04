@@ -136,17 +136,17 @@ AutotuneFrameData AutotuneEngine::processBlock (juce::AudioBuffer<float>& buffer
                                     numSamples);
 
     const auto ratioCents = 1200.0f * std::log2 (juce::jmax (0.0001f, ratio));
-    const auto safeRatio = std::pow (2.0f, juce::jlimit (-300.0f, 300.0f, ratioCents) / 1200.0f);
+    const auto safeRatio = std::pow (2.0f, juce::jlimit (-600.0f, 600.0f, ratioCents) / 1200.0f);
     const auto canAcquireCorrection = detection.voiced
-        && detection.confidence >= 0.25f
-        && std::abs (ratioCents) >= 3.0f
-        && std::abs (ratioCents) <= 300.0f
+        && detection.confidence >= 0.18f
+        && std::abs (ratioCents) >= 2.0f
+        && std::abs (ratioCents) <= 600.0f
         && attackProtectionSamplesRemaining <= 0;
 
     if (canAcquireCorrection)
     {
-        heldCorrectionRatio += (safeRatio - heldCorrectionRatio) * 0.35f;
-        correctionHoldSamplesRemaining = static_cast<int> (sampleRate * 0.45);
+        heldCorrectionRatio += (safeRatio - heldCorrectionRatio) * 0.55f;
+        correctionHoldSamplesRemaining = static_cast<int> (sampleRate * 0.55);
     }
     else
     {
@@ -155,7 +155,7 @@ AutotuneFrameData AutotuneEngine::processBlock (juce::AudioBuffer<float>& buffer
 
     const auto shouldCorrect = canAcquireCorrection || correctionHoldSamplesRemaining > 0;
     const auto targetBlend = shouldCorrect ? 1.0f : 0.0f;
-    const auto blendTime = targetBlend > correctionBlend ? 0.018f : 0.18f;
+    const auto blendTime = targetBlend > correctionBlend ? 0.010f : 0.22f;
     const auto blendCoefficient = 1.0f - std::exp (-static_cast<float> (numSamples)
                                                    / (static_cast<float> (sampleRate) * blendTime));
     correctionBlend += (targetBlend - correctionBlend) * blendCoefficient;
@@ -215,7 +215,7 @@ void AutotuneEngine::updateOnsetState (float blockRms, int numSamples) noexcept
     const auto onsetThreshold = previousEnvelope * 1.75f + 0.018f;
 
     if (blockRms > onsetThreshold)
-        attackProtectionSamplesRemaining = static_cast<int> (sampleRate * 0.09);
+        attackProtectionSamplesRemaining = static_cast<int> (sampleRate * 0.025);
 }
 
 int AutotuneEngine::stabiliseTargetMidiNote (int proposedMidiNote, int numSamples) noexcept
@@ -252,7 +252,7 @@ int AutotuneEngine::stabiliseTargetMidiNote (int proposedMidiNote, int numSample
         activeTargetMidiNote = candidateTargetMidiNote;
         candidateTargetSamples = 0;
         attackProtectionSamplesRemaining = juce::jmax (attackProtectionSamplesRemaining,
-                                                       static_cast<int> (sampleRate * 0.07));
+                                                       static_cast<int> (sampleRate * 0.02));
     }
 
     return activeTargetMidiNote;
@@ -429,7 +429,7 @@ float AutotuneEngine::calculateTargetRatio (const PitchDetectionResult& detectio
 float AutotuneEngine::medianFilterTargetRatio (float targetRatio) noexcept
 {
     const auto targetCents = 1200.0f * std::log2 (juce::jmax (0.0001f, targetRatio));
-    const auto clampedRatio = std::pow (2.0f, juce::jlimit (-300.0f, 300.0f, targetCents) / 1200.0f);
+    const auto clampedRatio = std::pow (2.0f, juce::jlimit (-600.0f, 600.0f, targetCents) / 1200.0f);
     targetRatioHistory[static_cast<size_t> (targetRatioHistoryIndex)] = clampedRatio;
     targetRatioHistoryIndex = (targetRatioHistoryIndex + 1) % static_cast<int> (targetRatioHistory.size());
     targetRatioHistorySize = juce::jmin (targetRatioHistorySize + 1, static_cast<int> (targetRatioHistory.size()));
@@ -446,7 +446,7 @@ float AutotuneEngine::smoothRatio (float targetRatio,
                                    int numSamples) noexcept
 {
     const auto targetCents = 1200.0f * std::log2 (juce::jmax (0.0001f, targetRatio));
-    targetRatio = std::pow (2.0f, juce::jlimit (-300.0f, 300.0f, targetCents) / 1200.0f);
+    targetRatio = std::pow (2.0f, juce::jlimit (-600.0f, 600.0f, targetCents) / 1200.0f);
 
     if (targetMidiNote != lastTargetMidiNote)
     {
