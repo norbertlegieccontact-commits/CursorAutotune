@@ -55,6 +55,7 @@ private:
     PitchDetectionResult stabiliseDetection (PitchDetectionResult detection, int numSamples) noexcept;
     void updateOnsetState (float blockRms, int numSamples) noexcept;
     int stabiliseTargetMidiNote (int proposedMidiNote, int numSamples) noexcept;
+    float processAlignedDrySample (float sample) noexcept;
     float deClickAndLimit (float sample) noexcept;
     static float softLimit (float sample) noexcept;
 
@@ -94,5 +95,9 @@ private:
     PitchShifter pitchShifter;
     std::vector<float> monoBuffer;
     std::vector<float> correctedMonoBuffer;
+    std::vector<float> alignedDryBuffer;
+    std::vector<float> dryDelayBuffer;
+    int dryDelayWriteIndex = 0;
+    int dryDelaySamples = 0;
 };
 

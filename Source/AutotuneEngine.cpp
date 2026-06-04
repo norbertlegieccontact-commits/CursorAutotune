@@ -14,6 +14,9 @@ void AutotuneEngine::prepare (const juce::dsp::ProcessSpec& spec)
     const auto scratchSize = static_cast<size_t> (juce::jmax (maximumBlockSize, 8192));
     monoBuffer.assign (scratchSize, 0.0f);
     correctedMonoBuffer.assign (scratchSize, 0.0f);
+    alignedDryBuffer.assign (scratchSize, 0.0f);
+    dryDelaySamples = pitchShifter.getLatencySamples();
+    dryDelayBuffer.assign (static_cast<size_t> (dryDelaySamples + maximumBlockSize + 8), 0.0f);
 
     reset();
 }
@@ -31,6 +34,8 @@ void AutotuneEngine::reset() noexcept
     correctionBlend = 0.0f;
     inputLevelEnvelope = 0.0f;
     previousOutputSample = 0.0f;
+    std::fill (dryDelayBuffer.begin(), dryDelayBuffer.end(), 0.0f);
+    dryDelayWriteIndex = 0;
     lastTargetMidiNote = -1;
     activeTargetMidiNote = -1;
     candidateTargetMidiNote = -1;
@@ -103,6 +108,7 @@ AutotuneFrameData AutotuneEngine::processBlock (juce::AudioBuffer<float>& buffer
 
         monoBuffer[static_cast<size_t> (sample)] = mono / static_cast<float> (numInputChannels);
         correctedMonoBuffer[static_cast<size_t> (sample)] = monoBuffer[static_cast<size_t> (sample)];
+        alignedDryBuffer[static_cast<size_t> (sample)] = processAlignedDrySample (monoBuffer[static_cast<size_t> (sample)]);
         sumSquares += static_cast<double> (monoBuffer[static_cast<size_t> (sample)])
             * monoBuffer[static_cast<size_t> (sample)];
     }
@@ -141,7 +147,7 @@ AutotuneFrameData AutotuneEngine::processBlock (juce::AudioBuffer<float>& buffer
     if (std::abs (1200.0f * std::log2 (juce::jmax (0.0001f, effectiveRatio))) < 6.0f)
         effectiveRatio = 1.0f;
 
-    pitchShifter.processBlock (correctedMonoBuffer.data(), numSamples, effectiveRatio);
+    pitchShifter.processBlock (correctedMonoBuffer.data(), numSamples, effectiveRatio, detection.detectedHz);
 
     for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
     {
@@ -149,7 +155,7 @@ AutotuneFrameData AutotuneEngine::processBlock (juce::AudioBuffer<float>& buffer
 
         for (int sample = 0; sample < numSamples; ++sample)
         {
-            const auto dry = monoBuffer[static_cast<size_t> (sample)];
+            const auto dry = alignedDryBuffer[static_cast<size_t> (sample)];
             const auto wet = correctedMonoBuffer[static_cast<size_t> (sample)];
             channelData[sample] = dry + (wet - dry) * correctionBlend;
         }
@@ -229,6 +235,19 @@ int AutotuneEngine::stabiliseTargetMidiNote (int proposedMidiNote, int numSample
     }
 
     return activeTargetMidiNote;
+}
+
+float AutotuneEngine::processAlignedDrySample (float sample) noexcept
+{
+    if (dryDelayBuffer.empty())
+        return sample;
+
+    const auto readIndex = (dryDelayWriteIndex + static_cast<int> (dryDelayBuffer.size()) - dryDelaySamples)
+        % static_cast<int> (dryDelayBuffer.size());
+    const auto delayed = dryDelayBuffer[static_cast<size_t> (readIndex)];
+    dryDelayBuffer[static_cast<size_t> (dryDelayWriteIndex)] = sample;
+    dryDelayWriteIndex = (dryDelayWriteIndex + 1) % static_cast<int> (dryDelayBuffer.size());
+    return delayed;
 }
 
 float AutotuneEngine::deClickAndLimit (float sample) noexcept
