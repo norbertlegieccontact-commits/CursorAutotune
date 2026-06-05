@@ -21,6 +21,15 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(JUCE)
 
+FetchContent_Declare(
+    signalsmith_stretch
+    GIT_REPOSITORY https://github.com/Signalsmith-Audio/signalsmith-stretch.git
+    GIT_TAG main
+    GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(signalsmith_stretch)
+
 if (UNIX AND NOT APPLE)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(GTK_WEBKIT REQUIRED IMPORTED_TARGET gtk+-x11-3.0 webkit2gtk-4.1)
@@ -90,6 +99,7 @@ target_link_libraries(NorbyAutotune
         juce::juce_gui_basics
         juce::juce_gui_extra
         NorbyAutotuneAssets
+        signalsmith-stretch
     PUBLIC
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
