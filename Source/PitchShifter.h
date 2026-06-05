@@ -2,12 +2,7 @@
 
 #include <JuceHeader.h>
 #include <array>
-
-namespace signalsmith::stretch
-{
-template <typename Sample, typename RandomEngine>
-struct SignalsmithStretch;
-}
+#include <signalsmith-stretch/signalsmith-stretch.h>
 
 class PitchShifter
 {

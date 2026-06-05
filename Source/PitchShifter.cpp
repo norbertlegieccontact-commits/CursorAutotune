@@ -1,6 +1,5 @@
 #include "PitchShifter.h"
 
-#include <signalsmith-stretch/signalsmith-stretch.h>
 #include <cmath>
 
 PitchShifter::~PitchShifter() = default;
