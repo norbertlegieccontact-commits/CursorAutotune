@@ -1,6 +1,13 @@
+#include <signalsmith-stretch/signalsmith-stretch.h>
+
 #include "PitchShifter.h"
 
 #include <cmath>
+
+void SignalsmithStretchDeleter::operator() (signalsmith::stretch::SignalsmithStretch<float, void>* pointer) const noexcept
+{
+    delete pointer;
+}
 
 PitchShifter::~PitchShifter() = default;
 

@@ -2,7 +2,17 @@
 
 #include <JuceHeader.h>
 #include <array>
-#include <signalsmith-stretch/signalsmith-stretch.h>
+
+namespace signalsmith::stretch
+{
+template <typename Sample, typename RandomEngine>
+struct SignalsmithStretch;
+}
+
+struct SignalsmithStretchDeleter
+{
+    void operator() (signalsmith::stretch::SignalsmithStretch<float, void>* pointer) const noexcept;
+};
 
 class PitchShifter
 {
@@ -23,7 +33,7 @@ private:
     int maximumBlockSize = 0;
     float lastPitchRatio = 1.0f;
 
-    std::unique_ptr<signalsmith::stretch::SignalsmithStretch<float, void>> stretch;
+    std::unique_ptr<signalsmith::stretch::SignalsmithStretch<float, void>, SignalsmithStretchDeleter> stretch;
     std::vector<float> inputBuffer;
     std::vector<float> outputBuffer;
     std::array<const float*, 1> inputPointers {};
