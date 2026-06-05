@@ -5,7 +5,7 @@
 
 namespace signalsmith::stretch
 {
-template <typename Sample>
+template <typename Sample, typename RandomEngine>
 struct SignalsmithStretch;
 }
 
@@ -28,7 +28,7 @@ private:
     int maximumBlockSize = 0;
     float lastPitchRatio = 1.0f;
 
-    std::unique_ptr<signalsmith::stretch::SignalsmithStretch<float>> stretch;
+    std::unique_ptr<signalsmith::stretch::SignalsmithStretch<float, void>> stretch;
     std::vector<float> inputBuffer;
     std::vector<float> outputBuffer;
     std::array<const float*, 1> inputPointers {};

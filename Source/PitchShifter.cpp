@@ -10,7 +10,7 @@ void PitchShifter::prepare (const juce::dsp::ProcessSpec& spec)
     sampleRate = juce::jmax (1.0, spec.sampleRate);
     maximumBlockSize = static_cast<int> (spec.maximumBlockSize);
 
-    stretch = std::make_unique<signalsmith::stretch::SignalsmithStretch<float>> (0);
+    stretch = std::make_unique<signalsmith::stretch::SignalsmithStretch<float, void>> (0);
     stretch->presetCheaper (1, static_cast<float> (sampleRate), true);
     stretch->setTransposeFactor (1.0f);
     stretch->setFormantFactor (1.0f);
