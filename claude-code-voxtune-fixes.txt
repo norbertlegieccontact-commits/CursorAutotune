@@ -1,0 +1,422 @@
+VOXTUNETUNE / JUCE 8 AUTOTUNE PLUGIN
+INSTRUKCJA DLA CLAUDE CODE - ZMIANY DO ZAIMPLEMENTOWANIA
+
+Cel:
+Poprawic naturalnosc pitch correction w pluginie VoxTuneTune.
+Plugin dziala i laduje sie w Logic, ale brzmi sztucznie / metalicznie.
+Trzeba zmienic konkretne miejsca w kodzie DSP.
+
+Nie dawaj ogolnych porad. Zmien kod.
+
+Najwazniejsze pliki:
+- plugins/VoxTuneTune/Source/PluginProcessor.cpp
+- plugins/VoxTuneTune/Source/PluginProcessor.h
+- plugins/VoxTuneTune/Source/dsp/InputRingBuffer.h
+- plugins/VoxTuneTune/Source/dsp/PitchDetectorYIN.h
+- plugins/VoxTuneTune/Source/dsp/PitchSmoother.h
+- plugins/VoxTuneTune/Source/dsp/ScaleQuantizer.h
+- plugins/VoxTuneTune/Source/dsp/HumanizeProcessor.h
+- plugins/VoxTuneTune/Source/dsp/PsolaEngine.h
+- plugins/VoxTuneTune/CMakeLists.txt
+
+Aktualny aktywny engine:
+- Signalsmith Stretch
+- domyslnie ustawiony w CMake:
+
+set(VOXTUNE_ENGINE "SIGNALSMITH" CACHE STRING "Pitch engine: SIGNALSMITH or PSOLA")
+
+Signalsmith path jest w PluginProcessor.cpp / processFixedChunk():
+
+stretch.setFormantBase(kFormantBaseHz / static_cast<float>(sr));
+stretch.setFormantSemitones(formantSemis);
+stretch.setTransposeSemitones(appliedCorrection);
+stretch.process(inPtrs, processLen, wetPtrs, processLen);
+
+Eksperymentalny PSOLA engine istnieje jako PsolaEngine.h, ale nie jest domyslnie aktywny.
+
+============================================================
+1. PITCH DETECTION - POPRAW LOW LATENCY I VOICED GATE
+============================================================
+
+Problem:
+PitchDetectorYIN to plain YIN, nie prawdziwy pYIN.
+Low-latency mode uzywa 512-sample frame, co nie wykrywa niskich wokali.
+
+Przy 44.1 kHz i frame 512:
+tauMax = W/2 = 256
+najnizszy pitch = 44100 / 256 = okolo 172 Hz
+
+To psuje baryton/bass i powoduje dropouty.
+
+ZMIANA 1A:
+W InputRingBuffer.h znajdz funkcje albo logike, gdzie lowLatency wybiera 512.
+Zmien minimum na 1024:
+
+static int getFrameSize(bool lowLatency)
+{
+    // 512 is too short for vocal F0 detection.
+    // 1024 resolves down to ~86 Hz at 44.1k with tau <= W/2.
+    return lowLatency ? 1024 : 2048;
+}
+
+Jesli funkcja wyglada inaczej, znajdz miejsce:
+
+lowLatency ? 512 : 2048
+
+i zmien na:
+
+lowLatency ? 1024 : 2048
+
+ZMIANA 1B:
+W PluginProcessor.cpp, w processFixedChunk(), znajdz:
+
+const bool voiced = result.isVoiced && smoothedHz > 0.0f;
+
+Zmien na:
+
+const bool voiced = result.isVoiced
+                 && result.confidence >= 0.80f
+                 && smoothedHz > 0.0f;
+
+Cel:
+Nie stroic oddechow, spolglosek, sybilantow i slabych ramek.
+
+============================================================
+2. NIE RESETUJ KOREKCJI NATYCHMIAST NA UNVOICED
+============================================================
+
+Problem:
+W PluginProcessor.cpp / processFixedChunk() unvoiced robi mniej wiecej:
+
+correctionTargetSemitones = 0.0f;
+correctionVoiced = false;
+humanizeProcessor.markUnvoiced();
+
+To powoduje pumping/dropout:
+plugin chwilowo wraca do dry / zero correction, a potem znowu lapie korekcje.
+
+ZMIANA 2A:
+Dodaj w PluginProcessor.h member:
+
+int unvoicedHoldHops = 0;
+
+ZMIANA 2B:
+W prepareToPlay() albo reset state dodaj:
+
+unvoicedHoldHops = 0;
+
+ZMIANA 2C:
+W voiced branch dodaj:
+
+unvoicedHoldHops = 0;
+
+ZMIANA 2D:
+W unvoiced branch zamien natychmiastowy reset na hold:
+
+++unvoicedHoldHops;
+
+// Hold last correction through short consonants/breath gaps.
+// Hop is 512 samples, so 6 hops is about 70 ms at 44.1 kHz.
+if (unvoicedHoldHops < 6)
+{
+    correctionVoiced = true;
+    // Keep correctionTargetSemitones unchanged.
+}
+else
+{
+    correctionTargetSemitones = 0.0f;
+    correctionVoiced = false;
+    humanizeProcessor.markUnvoiced();
+
+    atomicDetectedHz.store(0.0f, std::memory_order_relaxed);
+    atomicTargetHz.store(0.0f, std::memory_order_relaxed);
+    atomicCurrentNote.store(0.0f, std::memory_order_relaxed);
+    lastIsVoiced = false;
+}
+
+Cel:
+Krotkie spadki detekcji nie powinny powodowac slyszalnego przerwania albo zmiany pitchu.
+
+============================================================
+3. USUN HARD SNAP PRZY SPEED 100%
+============================================================
+
+Problem:
+W PluginProcessor.cpp jest specjalny branch:
+
+if (speedPercent >= 99.5f)
+{
+    smoothedCorrectionSemitones = target;
+}
+else
+{
+    const float tauMs = speedToTauMs(speedPercent) * speedJitter;
+    ...
+}
+
+To robi natychmiastowy skok korekcji co hop i brzmi robotycznie.
+
+ZMIANA:
+Usun caly if speedPercent >= 99.5f.
+Zawsze uzywaj one-pole smoothing z minimum 5 ms:
+
+const float tauMs = juce::jmax(5.0f, speedToTauMs(speedPercent) * speedJitter);
+const double tauSamples = juce::jmax(1.0, (tauMs / 1000.0) * sr);
+const float alpha = 1.0f - std::exp(-static_cast<float>(hopSize / tauSamples));
+
+smoothedCorrectionSemitones += (target - smoothedCorrectionSemitones) * alpha;
+
+Cel:
+Uniknac zipper noise / robotic hard snap.
+
+============================================================
+4. DODAJ TRANSITION-AWARE SMOOTHING
+============================================================
+
+Problem:
+Ta sama stala czasowa dziala dla sustain i dla zmiany nuty.
+Naturalne autotune powinno lagodniej przechodzic miedzy nutami.
+
+ZMIANA 4A:
+Dodaj member w PluginProcessor.h:
+
+float previousCorrectionTargetSemitones = 0.0f;
+
+ZMIANA 4B:
+Resetuj w prepareToPlay():
+
+previousCorrectionTargetSemitones = 0.0f;
+
+ZMIANA 4C:
+W smoothing code dodaj:
+
+const bool targetChanged =
+    std::abs(target - previousCorrectionTargetSemitones) > 0.5f;
+
+const float transitionMultiplier = targetChanged ? 0.35f : 1.0f;
+
+const float tauMs = juce::jmax(5.0f, speedToTauMs(speedPercent) * speedJitter);
+const double tauSamples = juce::jmax(1.0, (tauMs / 1000.0) * sr);
+const float baseAlpha = 1.0f - std::exp(-static_cast<float>(hopSize / tauSamples));
+const float alpha = juce::jlimit(0.0f, 1.0f, baseAlpha * transitionMultiplier);
+
+smoothedCorrectionSemitones += (target - smoothedCorrectionSemitones) * alpha;
+previousCorrectionTargetSemitones = target;
+
+Cel:
+Mniej sztucznych przeskokow przy zmianach nut.
+
+============================================================
+5. DODAJ FLEX / TOLERANCE ZONE DO SCALEQUANTIZER
+============================================================
+
+Problem:
+ScaleQuantizer::quantize() zawsze snapuje do najblizszej nuty skali.
+To robi robotyczne skakanie targetu.
+
+ZMIANA 5A:
+W ScaleQuantizer.h zmien funkcje:
+
+float quantize(float inputHz) const
+
+na:
+
+float quantize(float inputHz, float toleranceCents = 15.0f) const
+{
+    if (inputHz <= 0.0f)
+        return inputHz;
+
+    const float midiNote = 69.0f + 12.0f * std::log2(inputHz / 440.0f);
+    const int centerNote = static_cast<int>(std::round(midiNote));
+
+    int bestNote = centerNote;
+    float bestDist = 999.0f;
+
+    for (int delta = 0; delta <= 6; ++delta)
+    {
+        const int noteAbove = centerNote + delta;
+        if (scaleMask[((noteAbove % 12) + 12) % 12])
+        {
+            const float dist = std::abs(midiNote - static_cast<float>(noteAbove));
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                bestNote = noteAbove;
+            }
+        }
+
+        if (delta > 0)
+        {
+            const int noteBelow = centerNote - delta;
+            if (scaleMask[((noteBelow % 12) + 12) % 12])
+            {
+                const float dist = std::abs(midiNote - static_cast<float>(noteBelow));
+                if (dist < bestDist)
+                {
+                    bestDist = dist;
+                    bestNote = noteBelow;
+                }
+            }
+        }
+    }
+
+    const float cents = bestDist * 100.0f;
+
+    // Flex zone: preserve small expressive deviations instead of snapping.
+    if (cents < toleranceCents)
+        return inputHz;
+
+    return midiToHz(bestNote);
+}
+
+ZMIANA 5B:
+W PluginProcessor.cpp znajdz:
+
+float targetHz = scaleQuantizer.quantize(detectedHz);
+
+Zmien na:
+
+const float toleranceCents = 10.0f + (humanizePercent / 100.0f) * 25.0f;
+float targetHz = scaleQuantizer.quantize(detectedHz, toleranceCents);
+
+Cel:
+Male ekspresyjne odchylenia nie beda snapowane natychmiast.
+
+============================================================
+6. POPRAW FORMANT BASE DLA SIGNALSMITH
+============================================================
+
+Problem:
+W Signalsmith path jest stale:
+
+stretch.setFormantBase(kFormantBaseHz / static_cast<float>(sr));
+
+Staly formant base okolo 200 Hz nie pasuje do kazdego glosu.
+
+ZMIANA:
+Zamien na:
+
+float formantBaseHz = kFormantBaseHz;
+
+if (lastIsVoiced && lastDetectedHz > 0.0f)
+    formantBaseHz = juce::jlimit(90.0f, 450.0f, lastDetectedHz);
+
+stretch.setFormantBase(formantBaseHz / static_cast<float>(sr));
+
+Cel:
+Signalsmith dostaje lepsza informacje o rejestrze wokalu.
+
+============================================================
+7. ZMNIEJSZ ZAKRES MANUAL FORMANT SHIFT
+============================================================
+
+Problem:
+Aktualnie:
+
+const float formantSemis = (formantPercent - 50.0f) / 50.0f * 12.0f;
+stretch.setFormantSemitones(formantSemis);
+
+±12 semitones formant shift jest ekstremalne.
+
+ZMIANA:
+Zmien na ±4 semitones:
+
+const float formantSemis = (formantPercent - 50.0f) / 50.0f * 4.0f;
+stretch.setFormantSemitones(formantSemis);
+
+Cel:
+Mniej chipmunk/demon artifacts.
+
+============================================================
+8. SPRAWDZ WET/DRY MIX I LATENCJE
+============================================================
+
+Problem:
+Wet/dry mix jest OK tylko jesli wet i dry sa latency-aligned.
+
+Aktualny kod powinien miec cos takiego:
+
+const int engineLatency = stretch.inputLatency() + stretch.outputLatency();
+dryDelaySamples = engineLatency;
+latencySamples = engineLatency + kInternalBlock;
+setLatencySamples(latencySamples);
+
+ZMIANA:
+Upewnij sie, ze po zmianach Signalsmith nadal tak jest.
+Dodaj guard:
+
+jassert(dryDelaySamples >= 0);
+jassert(dryDelayBuffer.getNumSamples() >= dryDelaySamples + kInternalBlock);
+
+Cel:
+Uniknac comb filtering / slapback przy mix < 100%.
+
+============================================================
+9. NIE UZYWAJ GPL
+============================================================
+
+Nie integruj bezposrednio:
+- Autotalent
+- MXTune
+- TalentedHack
+- Rubber Band GPL
+
+Mozna uzyc jako referencji architektonicznej, ale nie kopiowac kodu.
+
+Dopuszczalne:
+- Signalsmith Stretch MIT
+- Bungee MPL-2.0
+- Rubber Band commercial license
+- zPlane elastique SDK
+- Signalsmith Pro commercial
+
+============================================================
+PRIORYTET IMPLEMENTACJI
+============================================================
+
+Zaimplementuj w tej kolejnosci:
+
+1. unvoiced hold
+2. usun hard snap przy Speed 100
+3. transition-aware smoothing
+4. ScaleQuantizer tolerance / flex zone
+5. dynamic formant base
+6. zmniejsz formant shift range
+7. lowLatency frame minimum 1024
+8. sprawdz dry/wet latency alignment
+
+Po zmianach:
+- zbuduj AU
+- sprawdz, ze plugin kompiluje sie na macOS
+- nie dodawaj GPL zaleznosci
+- nie alokuj pamieci w audio thread
+- nie resetuj DSP state przy bypass toggle
+
+============================================================
+OCZEKIWANY EFEKT
+============================================================
+
+Plugin ma brzmiec:
+- mniej metalicznie
+- mniej robotycznie
+- bez naglych pitch dropoutow
+- bez strojenia oddechow/spolglosek
+- z lagodniejszymi przejsciami nut
+- z bardziej naturalnym zachowaniem formantow
+
+Nie musi jeszcze byc idealnym Antaresem.
+Najpierw ma byc wyraznie bardziej naturalny i mniej popsuty.
+
+============================================================
+NAJWAZNIEJSZA UWAGA
+============================================================
+
+Najwieksza roznica jakosciowa nadal zalezy od pitch-shifting engine.
+Aktywny Signalsmith path moze nadal brzmiec bardziej phase-vocoder / spectral niz prawdziwy vocal PSOLA.
+
+Jesli po powyzszych zmianach nadal bedzie metalicznie:
+- przygotuj drugi engine path oparty na stabilnym vocal PSOLA,
+- albo zaproponuj integracje commercial SDK.
+
+Nie probuj dalej latac zlych artefaktow samymi progami.
+
