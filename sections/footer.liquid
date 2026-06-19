@@ -1,0 +1,44 @@
+<footer class="site-footer">
+  <div class="page-width site-footer__inner">
+    <div>
+      <a class="site-logo" href="{{ routes.root_url }}" aria-label="{{ shop.name }}">
+        <span class="site-logo__mark">{{ settings.brand_mark | default: shop.name | slice: 0, 2 | escape }}</span>
+        <span>{{ shop.name }}</span>
+      </a>
+
+      {%- if section.settings.text != blank -%}
+        <div class="rte" style="max-width: 38rem; margin-top: 1rem;">
+          {{ section.settings.text }}
+        </div>
+      {%- endif -%}
+
+      <ul class="footer-links">
+        {%- for link in linklists[section.settings.menu].links -%}
+          <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
+        {%- endfor -%}
+      </ul>
+    </div>
+
+    <small>&copy; {{ 'now' | date: '%Y' }} {{ shop.name }}. Powered by Shopify.</small>
+  </div>
+</footer>
+
+{% schema %}
+{
+  "name": "Footer",
+  "settings": [
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Menu",
+      "default": "footer"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "Text",
+      "default": "<p>Motyw Shopify przygotowany do odwzorowania projektu 1:1 po podmianie tekstow, grafik i ustawien sekcji.</p>"
+    }
+  ]
+}
+{% endschema %}

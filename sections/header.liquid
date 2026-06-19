@@ -1,0 +1,78 @@
+<header class="site-header">
+  <div class="page-width site-header__inner">
+    <a class="site-logo" href="{{ routes.root_url }}" aria-label="{{ shop.name }}">
+      <span class="site-logo__mark">
+        {%- if settings.logo != blank -%}
+          {{ settings.logo | image_url: width: 120 | image_tag: alt: shop.name, loading: 'eager' }}
+        {%- else -%}
+          {{ settings.brand_mark | default: shop.name | slice: 0, 2 | escape }}
+        {%- endif -%}
+      </span>
+      <span>{{ shop.name }}</span>
+    </a>
+
+    <nav id="PrimaryNavigation" class="site-nav" aria-label="Primary navigation">
+      <ul>
+        {%- for link in linklists[section.settings.menu].links -%}
+          <li>
+            <a href="{{ link.url }}" {% if link.current %}aria-current="page"{% endif %}>
+              {{ link.title | escape }}
+            </a>
+          </li>
+        {%- else -%}
+          <li><a href="{{ routes.root_url }}">Home</a></li>
+          <li><a href="{{ routes.all_products_collection_url }}">Shop</a></li>
+          <li><a href="/pages/contact">Kontakt</a></li>
+        {%- endfor -%}
+      </ul>
+    </nav>
+
+    <div class="header-actions">
+      <a class="cart-link" href="{{ routes.cart_url }}" aria-label="{{ 'general.cart' | t }}">
+        {{ 'general.cart' | t }}
+        <span class="cart-link__count">{{ cart.item_count }}</span>
+      </a>
+
+      {%- if section.settings.cta_label != blank -%}
+        <a class="button" href="{{ section.settings.cta_link | default: routes.all_products_collection_url }}">
+          {{ section.settings.cta_label | escape }}
+        </a>
+      {%- endif -%}
+
+      <button
+        type="button"
+        class="button button--secondary mobile-nav-toggle"
+        aria-controls="PrimaryNavigation"
+        aria-expanded="false"
+        data-mobile-nav-toggle
+      >
+        {{ 'general.menu' | t }}
+      </button>
+    </div>
+  </div>
+</header>
+
+{% schema %}
+{
+  "name": "Header",
+  "settings": [
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Menu",
+      "default": "main-menu"
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "CTA label",
+      "default": "Umow konsultacje"
+    },
+    {
+      "type": "url",
+      "id": "cta_link",
+      "label": "CTA link"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,7 @@
+# Copy this file to shopify.theme.local.toml and fill in your store/theme values.
+# Do not commit private store credentials.
+
+[environments.development]
+store = "your-store.myshopify.com"
+theme = "development"
+ignore = [".shopifyignore"]

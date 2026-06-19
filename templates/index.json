@@ -1,0 +1,194 @@
+{
+  "sections": {
+    "hero": {
+      "type": "hero",
+      "blocks": {
+        "stat_1": {
+          "type": "stat",
+          "settings": {
+            "value": "1:1",
+            "label": "Layout projektu"
+          }
+        },
+        "stat_2": {
+          "type": "stat",
+          "settings": {
+            "value": "OS 2.0",
+            "label": "Edytor Shopify"
+          }
+        },
+        "stat_3": {
+          "type": "stat",
+          "settings": {
+            "value": "24/7",
+            "label": "Sprzedaz online"
+          }
+        }
+      },
+      "block_order": [
+        "stat_1",
+        "stat_2",
+        "stat_3"
+      ],
+      "settings": {
+        "anchor": "start",
+        "eyebrow": "Shopify theme template",
+        "heading": "Strona 1:1 przeniesiona do edytowalnego motywu Shopify.",
+        "text": "<p>Wymien tresci i grafiki na elementy z projektu, a ta struktura pozwoli zachowac wyglad landing page oraz sprzedawac produkty w Shopify.</p>",
+        "primary_label": "Zobacz produkty",
+        "secondary_label": "Poznaj sekcje"
+      }
+    },
+    "features": {
+      "type": "feature-grid",
+      "blocks": {
+        "feature_1": {
+          "type": "feature",
+          "settings": {
+            "icon": "01",
+            "heading": "Sekcje zamiast statycznego kodu",
+            "text": "<p>Kazdy obszar strony jest osobna sekcja, ktora mozna przestawiac i edytowac w Shopify.</p>"
+          }
+        },
+        "feature_2": {
+          "type": "feature",
+          "settings": {
+            "icon": "02",
+            "heading": "Produkty i koszyk",
+            "text": "<p>Motyw zawiera karty produktow, formularze dodawania do koszyka i template produktu.</p>"
+          }
+        },
+        "feature_3": {
+          "type": "feature",
+          "settings": {
+            "icon": "03",
+            "heading": "Dopasowanie wygladu",
+            "text": "<p>Kolory, szerokosc strony, logo, hero, teksty i CTA sa sterowane przez ustawienia motywu.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "feature_1",
+        "feature_2",
+        "feature_3"
+      ],
+      "settings": {
+        "anchor": "oferta",
+        "center_text": true,
+        "eyebrow": "Fundament wdrozenia",
+        "heading": "Gotowy motyw do dalszego odwzorowania projektu 1:1.",
+        "text": "<p>Repozytorium nie zawieralo zrodlowego projektu, dlatego motyw zostal przygotowany jako baza migracyjna do podmiany tresci i assetow.</p>"
+      }
+    },
+    "story": {
+      "type": "image-with-text",
+      "settings": {
+        "anchor": "historia",
+        "reverse_layout": false,
+        "eyebrow": "Blok opisowy",
+        "heading": "Wgraj zdjecie z projektu i ustaw dokladna tresc tej sekcji.",
+        "text": "<p>Ten blok jest przeznaczony na najwazniejszy opis marki, uslugi albo procesu. Mozna zmienic polozenie obrazu, tekst i przycisk.</p>",
+        "button_label": "Przejdz do sklepu"
+      }
+    },
+    "products": {
+      "type": "featured-collection",
+      "settings": {
+        "anchor": "produkty",
+        "center_text": true,
+        "products_to_show": 3,
+        "show_quick_add": true,
+        "eyebrow": "Oferta",
+        "heading": "Produkty Shopify w landingowym ukladzie.",
+        "text": "<p>Wybierz kolekcje w edytorze motywu, aby ta sekcja zaczela pobierac prawdziwe produkty.</p>",
+        "button_label": "Zobacz wszystkie produkty"
+      }
+    },
+    "testimonials": {
+      "type": "testimonials",
+      "blocks": {
+        "testimonial_1": {
+          "type": "testimonial",
+          "settings": {
+            "quote": "<p>Motyw jest gotowy do edycji i zachowuje nowoczesny, premium charakter strony.</p>",
+            "author": "Klient",
+            "caption": "Opinia"
+          }
+        },
+        "testimonial_2": {
+          "type": "testimonial",
+          "settings": {
+            "quote": "<p>Sekcje mozna szybko przestawiac, a produkty sa podlaczone do Shopify.</p>",
+            "author": "Shopify",
+            "caption": "Workflow"
+          }
+        },
+        "testimonial_3": {
+          "type": "testimonial",
+          "settings": {
+            "quote": "<p>To dobra baza do przeniesienia projektu z kodu do template'u sklepu.</p>",
+            "author": "Cursor",
+            "caption": "Implementation"
+          }
+        }
+      },
+      "block_order": [
+        "testimonial_1",
+        "testimonial_2",
+        "testimonial_3"
+      ],
+      "settings": {
+        "anchor": "opinie",
+        "eyebrow": "Social proof",
+        "heading": "Sekcja opinii do dopasowania pod finalny design."
+      }
+    },
+    "faq": {
+      "type": "faq",
+      "blocks": {
+        "question_1": {
+          "type": "question",
+          "settings": {
+            "question": "Czy to jest juz finalne odwzorowanie 1:1?",
+            "answer": "<p>Nie, bo w repozytorium nie bylo plikow oryginalnej strony. Motyw jest przygotowany tak, aby po dostarczeniu projektu szybko przeniesc go sekcja po sekcji.</p>"
+          }
+        },
+        "question_2": {
+          "type": "question",
+          "settings": {
+            "question": "Co moge edytowac w panelu Shopify?",
+            "answer": "<p>Logo, kolory, teksty, grafiki, CTA, kolekcje produktow, bloki statystyk, benefity, FAQ, opinie i formularz kontaktowy.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "question_1",
+        "question_2"
+      ],
+      "settings": {
+        "anchor": "faq",
+        "eyebrow": "FAQ",
+        "heading": "Najwazniejsze informacje o wdrozeniu."
+      }
+    },
+    "contact": {
+      "type": "contact-cta",
+      "settings": {
+        "anchor": "kontakt",
+        "eyebrow": "Nastepny krok",
+        "heading": "Podmienimy assety i tresci, gdy projekt z Claude Code trafi do repo.",
+        "text": "<p>Dodaj pliki strony albo eksport HTML/CSS/React, a motyw mozna dopracowac piksel po pikselu.</p>",
+        "button_label": "Wyslij wiadomosc"
+      }
+    }
+  },
+  "order": [
+    "hero",
+    "features",
+    "story",
+    "products",
+    "testimonials",
+    "faq",
+    "contact"
+  ]
+}

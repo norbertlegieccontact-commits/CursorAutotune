@@ -1,0 +1,33 @@
+{
+  "accessibility": {
+    "skip_to_text": "Przejdz do tresci"
+  },
+  "general": {
+    "cart": "Koszyk",
+    "menu": "Menu",
+    "close": "Zamknij",
+    "not_found": "Nie znaleziono strony",
+    "back_home": "Wroc na strone glowna"
+  },
+  "products": {
+    "product": {
+      "add_to_cart": "Dodaj do koszyka",
+      "sold_out": "Wyprzedane",
+      "quantity": "Ilosc"
+    }
+  },
+  "cart": {
+    "title": "Koszyk",
+    "empty": "Twoj koszyk jest pusty",
+    "checkout": "Przejdz do kasy",
+    "subtotal": "Suma",
+    "update": "Aktualizuj koszyk"
+  },
+  "contact": {
+    "name": "Imie",
+    "email": "Email",
+    "message": "Wiadomosc",
+    "send": "Wyslij wiadomosc",
+    "success": "Dziekujemy za kontakt. Odpowiemy tak szybko, jak to mozliwe."
+  }
+}

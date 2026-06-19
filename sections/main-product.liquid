@@ -1,0 +1,52 @@
+<section class="section">
+  <div class="page-width product-detail">
+    <div class="product-detail__media">
+      {%- if product.featured_image != blank -%}
+        {{ product.featured_image | image_url: width: 1400 | image_tag: class: 'product-card__image', loading: 'eager' }}
+      {%- endif -%}
+    </div>
+
+    <div class="product-detail__info">
+      <p class="eyebrow">{{ product.vendor | escape }}</p>
+      <h1 class="heading heading--medium">{{ product.title | escape }}</h1>
+      <p class="price" style="font-size: 1.5rem;">{{ product.selected_or_first_available_variant.price | money }}</p>
+
+      {%- if product.description != blank -%}
+        <div class="rte">{{ product.description }}</div>
+      {%- endif -%}
+
+      {%- form 'product', product, class: 'product-form' -%}
+        {%- unless product.has_only_default_variant -%}
+          <label for="ProductVariant-{{ section.id }}">Wariant</label>
+          <select id="ProductVariant-{{ section.id }}" name="id">
+            {%- for variant in product.variants -%}
+              <option value="{{ variant.id }}" {% if variant == product.selected_or_first_available_variant %}selected{% endif %} {% unless variant.available %}disabled{% endunless %}>
+                {{ variant.title }} - {{ variant.price | money }}
+              </option>
+            {%- endfor -%}
+          </select>
+        {%- else -%}
+          <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+        {%- endunless -%}
+
+        <label for="Quantity-{{ section.id }}">{{ 'products.product.quantity' | t }}</label>
+        <input id="Quantity-{{ section.id }}" type="number" name="quantity" min="1" value="1">
+
+        <button class="button" type="submit" {% unless product.available %}disabled{% endunless %}>
+          {%- if product.available -%}
+            {{ 'products.product.add_to_cart' | t }}
+          {%- else -%}
+            {{ 'products.product.sold_out' | t }}
+          {%- endif -%}
+        </button>
+      {%- endform -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Main product",
+  "settings": []
+}
+{% endschema %}

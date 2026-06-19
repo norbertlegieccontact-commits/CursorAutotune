@@ -1,0 +1,16 @@
+{
+  "type": "footer",
+  "name": "Footer group",
+  "sections": {
+    "footer": {
+      "type": "footer",
+      "settings": {
+        "menu": "footer",
+        "text": "<p>Motyw Shopify przygotowany do odwzorowania projektu 1:1 po podmianie tekstow, grafik i ustawien sekcji.</p>"
+      }
+    }
+  },
+  "order": [
+    "footer"
+  ]
+}

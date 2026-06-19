@@ -1,0 +1,18 @@
+<section class="section">
+  <div class="page-width">
+    <article class="page-card">
+      <p class="eyebrow">{{ shop.name }}</p>
+      <h1 class="heading heading--medium">{{ page.title | escape }}</h1>
+      <div class="rte" style="margin-top: 1.5rem;">
+        {{ page.content }}
+      </div>
+    </article>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Main page",
+  "settings": []
+}
+{% endschema %}

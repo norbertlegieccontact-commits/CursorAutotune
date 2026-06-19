@@ -1,0 +1,120 @@
+<section class="section" id="{{ section.settings.anchor | default: section.id }}">
+  <div class="page-width">
+    <div class="section-header{% if section.settings.center_text %} section-header--center{% endif %}">
+      {%- if section.settings.eyebrow != blank -%}
+        <p class="eyebrow">{{ section.settings.eyebrow | escape }}</p>
+      {%- endif -%}
+      {%- if section.settings.heading != blank -%}
+        <h2 class="heading heading--medium">{{ section.settings.heading | escape }}</h2>
+      {%- endif -%}
+      {%- if section.settings.text != blank -%}
+        <div class="rte">{{ section.settings.text }}</div>
+      {%- endif -%}
+    </div>
+
+    <div class="feature-grid">
+      {%- for block in section.blocks -%}
+        <article class="feature-card" {{ block.shopify_attributes }}>
+          <div class="feature-card__icon">{{ block.settings.icon | escape }}</div>
+          <h3>{{ block.settings.heading | escape }}</h3>
+          <div class="rte">{{ block.settings.text }}</div>
+        </article>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Feature grid",
+  "settings": [
+    {
+      "type": "text",
+      "id": "anchor",
+      "label": "Anchor ID",
+      "default": "oferta"
+    },
+    {
+      "type": "checkbox",
+      "id": "center_text",
+      "label": "Center text",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Dlaczego ten motyw"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Kazdy element strony jest gotowy do edycji w Shopify."
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "Text",
+      "default": "<p>Sekcja nadaje sie do opisania benefitow, uslug, kategorii lub procesu zakupowego.</p>"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "feature",
+      "name": "Feature",
+      "settings": [
+        {
+          "type": "text",
+          "id": "icon",
+          "label": "Icon text",
+          "default": "01"
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Edytowalne teksty"
+        },
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Text",
+          "default": "<p>Zmieniaj naglowki, opisy, przyciski i kolejnosc blokow bez pracy w kodzie.</p>"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Feature grid",
+      "blocks": [
+        {
+          "type": "feature",
+          "settings": {
+            "icon": "01",
+            "heading": "Layout pod projekt 1:1",
+            "text": "<p>Podmien sekcje i grafiki, aby odwzorowac projekt z narzedzia no-code lub Claude Code.</p>"
+          }
+        },
+        {
+          "type": "feature",
+          "settings": {
+            "icon": "02",
+            "heading": "Produkty Shopify",
+            "text": "<p>Podlacz kolekcje i warianty produktow bez utraty landingowego wygladu strony.</p>"
+          }
+        },
+        {
+          "type": "feature",
+          "settings": {
+            "icon": "03",
+            "heading": "Szybka personalizacja",
+            "text": "<p>Kolory, logo, hero i CTA sa sterowane przez ustawienia motywu.</p>"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,50 @@
+<section class="section">
+  <div class="page-width">
+    <div class="section-header">
+      <p class="eyebrow">{{ shop.name }}</p>
+      <h1 class="heading heading--medium">{{ 'cart.title' | t }}</h1>
+    </div>
+
+    <div class="cart-panel">
+      {%- if cart.item_count == 0 -%}
+        <p class="rte">{{ 'cart.empty' | t }}</p>
+        <a class="button" href="{{ routes.all_products_collection_url }}">{{ 'general.back_home' | t }}</a>
+      {%- else -%}
+        <form action="{{ routes.cart_url }}" method="post">
+          {%- for item in cart.items -%}
+            <div class="cart-item">
+              <a class="cart-item__image" href="{{ item.url }}">
+                {%- if item.image != blank -%}
+                  {{ item.image | image_url: width: 240 | image_tag: loading: 'lazy' }}
+                {%- endif -%}
+              </a>
+              <div>
+                <h3 style="margin: 0;"><a href="{{ item.url }}">{{ item.product.title | escape }}</a></h3>
+                <p class="rte" style="margin: .25rem 0 0;">{{ item.variant.title | escape }}</p>
+              </div>
+              <div>
+                <input class="cart-quantity" type="number" name="updates[]" value="{{ item.quantity }}" min="0" aria-label="{{ 'products.product.quantity' | t }}">
+                <p class="price">{{ item.final_line_price | money }}</p>
+              </div>
+            </div>
+          {%- endfor -%}
+
+          <div style="display: grid; gap: 1rem; justify-items: end; margin-top: 1.5rem;">
+            <p class="price" style="font-size: 1.4rem;">{{ 'cart.subtotal' | t }}: {{ cart.total_price | money }}</p>
+            <div class="button-row">
+              <button class="button button--secondary" type="submit" name="update">{{ 'cart.update' | t }}</button>
+              <button class="button" type="submit" name="checkout">{{ 'cart.checkout' | t }}</button>
+            </div>
+          </div>
+        </form>
+      {%- endif -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Main cart",
+  "settings": []
+}
+{% endschema %}

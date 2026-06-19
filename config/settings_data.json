@@ -1,0 +1,32 @@
+{
+  "current": {
+    "logo": "",
+    "favicon": "",
+    "brand_mark": "CA",
+    "page_width": 1240,
+    "heading_scale": 100,
+    "color_background": "#06070a",
+    "color_surface": "#10131a",
+    "color_text": "#f6f7fb",
+    "color_muted": "#a6adbb",
+    "color_primary": "#f6c344",
+    "color_primary_contrast": "#08090c",
+    "color_border": "#252a35"
+  },
+  "presets": {
+    "Default": {
+      "logo": "",
+      "favicon": "",
+      "brand_mark": "CA",
+      "page_width": 1240,
+      "heading_scale": 100,
+      "color_background": "#06070a",
+      "color_surface": "#10131a",
+      "color_text": "#f6f7fb",
+      "color_muted": "#a6adbb",
+      "color_primary": "#f6c344",
+      "color_primary_contrast": "#08090c",
+      "color_border": "#252a35"
+    }
+  }
+}

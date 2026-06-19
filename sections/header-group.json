@@ -1,0 +1,25 @@
+{
+  "type": "header",
+  "name": "Header group",
+  "sections": {
+    "announcement": {
+      "type": "announcement-bar",
+      "settings": {
+        "text": "Darmowa dostawa od 499 zl | Profesjonalny tuning i akcesoria",
+        "link": ""
+      }
+    },
+    "header": {
+      "type": "header",
+      "settings": {
+        "menu": "main-menu",
+        "cta_label": "Umow konsultacje",
+        "cta_link": "/pages/contact"
+      }
+    }
+  },
+  "order": [
+    "announcement",
+    "header"
+  ]
+}
