@@ -1,0 +1,194 @@
+{%- liquid
+  assign cyan = section.settings.accent_cyan
+  assign magenta = section.settings.accent_magenta
+  assign purple = section.settings.accent_purple
+  assign t_primary = section.settings.text_primary
+  assign t_secondary = section.settings.text_secondary
+  assign t_dim = section.settings.text_dim
+  assign bg = section.settings.bg_color
+  assign first_preset = section.blocks.first.settings.name | default: 'Natural'
+-%}
+
+<style>
+  #shopify-section-{{ section.id }} :root,
+  .vt-{{ section.id }}{
+    --accent-cyan:{{ cyan }};
+    --accent-magenta:{{ magenta }};
+    --accent-purple:{{ purple }};
+    --text-primary:{{ t_primary }};
+    --text-secondary:{{ t_secondary }};
+    --text-dim:{{ t_dim }};
+    --glow-cyan:{{ cyan | color_modify: 'alpha', 0.5 }};
+    --glow-magenta:{{ magenta | color_modify: 'alpha', 0.5 }};
+    --glow-purple:{{ purple | color_modify: 'alpha', 0.5 }};
+  }
+  body.template-index{background:{{ bg }};display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 16px;overflow-x:hidden}
+  .vt-stage{width:100%;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 16px}
+  .vt-stage *{-webkit-font-smoothing:antialiased}
+  .plugin{width:{{ section.settings.plugin_width | default: 700 }}px;max-width:100%;border-radius:16px;overflow:hidden;position:relative;box-shadow:0 50px 100px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.05)}
+  .plugin-bg{position:absolute;inset:0;background:radial-gradient(circle at 20% 10%,{{ cyan | color_modify: 'alpha', 0.28 }},transparent 30%),radial-gradient(circle at 80% 20%,{{ magenta | color_modify: 'alpha', 0.22 }},transparent 30%),radial-gradient(circle at 50% 90%,{{ purple | color_modify: 'alpha', 0.26 }},transparent 36%),linear-gradient(135deg,#09090d,#050507 55%,#100814);opacity:.9}
+  .plugin-bg:after{content:"";position:absolute;inset:-30%;background:repeating-linear-gradient(115deg,rgba(255,255,255,.035) 0 1px,transparent 1px 18px);filter:blur(.3px);transform:rotate(-4deg)}
+  .plugin-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,14,.82),rgba(6,6,10,.96))}
+  .plugin-content{position:relative;z-index:1}
+  .header{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.05)}
+  .header-left{display:flex;align-items:center;gap:8px}
+  .btn{background:transparent;border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:6px 12px;color:var(--text-secondary);font-family:'Inter';font-size:9px;font-weight:600;letter-spacing:1px;cursor:pointer;transition:all .2s;text-transform:uppercase}
+  .btn:hover{border-color:rgba(255,255,255,.3);color:var(--text-primary)}
+  .btn.bypass-active{background:#ff4444;border-color:#ff4444;color:#fff;box-shadow:0 0 20px rgba(255,68,68,.5)}
+  .btn.formant-active{background:var(--accent-purple);border-color:var(--accent-purple);color:#000;box-shadow:0 0 20px var(--glow-purple)}
+  .preset-wrapper{position:relative}.preset-selector{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:5px 12px;cursor:pointer;user-select:none}.preset-arrow{color:var(--text-dim);cursor:pointer;font-size:12px;transition:color .2s;padding:0 4px}.preset-arrow:hover{color:var(--text-primary)}.preset-name{font-size:10px;font-weight:500;color:var(--text-secondary);min-width:90px;text-align:center}
+  .preset-dropdown{display:none;position:absolute;top:calc(100% + 6px);right:0;width:200px;background:#1a1a1e;border:1px solid rgba(255,255,255,.1);border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.9);z-index:9999;padding:6px 0;max-height:360px;overflow-y:auto}.preset-dropdown.open{display:block}.preset-category{padding:8px 14px 4px;font-size:8px;font-weight:700;letter-spacing:2px;color:var(--accent-cyan);text-transform:uppercase}.preset-item{padding:7px 14px;font-size:11px;color:var(--text-secondary);cursor:pointer;transition:all .15s}.preset-item:hover{background:{{ cyan | color_modify: 'alpha', 0.1 }};color:var(--text-primary)}.preset-item.active{color:var(--accent-cyan);background:{{ cyan | color_modify: 'alpha', 0.06 }};font-weight:600}.preset-divider{height:1px;background:rgba(255,255,255,.05);margin:4px 12px}
+  .logo-section{padding:26px 0 18px;text-align:center}.logo{position:relative;display:inline-block}.logo-vox{font-family:'Playfair Display',serif;font-size:72px;font-weight:700;color:var(--text-primary);letter-spacing:8px;line-height:.8;text-shadow:0 0 35px rgba(255,255,255,.12)}.logo-bar{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(20,20,24,.9);padding:6px 24px}.logo-tune{font-family:'Inter';font-size:13px;font-weight:600;letter-spacing:8px;color:var(--text-secondary)}
+  .visualizer-section{padding:0 20px;margin-bottom:20px}.visualizer-container{background:linear-gradient(180deg,rgba(13,13,15,.8),rgba(8,8,10,.8));border-radius:12px;padding:14px;border:1px solid rgba(255,255,255,.04)}.visualizer-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.visualizer-label{font-size:8px;font-weight:600;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase}.note-display{display:flex;align-items:baseline;gap:6px}.current-note{font-family:'Playfair Display',serif;font-size:24px;font-weight:600}.current-freq{font-size:10px;color:var(--text-dim);font-family:'Space Mono',monospace}.waveform-wrapper{height:70px;background:rgba(0,0,0,.4);border-radius:8px;overflow:hidden}.waveform-canvas{width:100%;height:100%}
+  .key-scale-section{padding:0 20px;margin-bottom:16px}.key-scale-row{display:flex;gap:10px}.control-box{flex:1;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:10px;padding:10px 14px}.control-box-label{font-size:8px;font-weight:600;letter-spacing:2px;color:var(--text-dim);margin-bottom:6px;text-transform:uppercase}.control-select{width:100%;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:8px 12px;color:var(--text-primary);font-family:'Inter';font-size:12px;font-weight:500;cursor:pointer;appearance:none}
+  .ai-key-box{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:120px}.ai-key-btn{width:100%;padding:10px 16px;font-size:9px;font-weight:600;letter-spacing:1px;background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid {{ purple | color_modify: 'alpha', 0.3 }};color:var(--accent-purple);border-radius:8px;cursor:pointer;transition:all .3s}.ai-key-btn:hover{border-color:var(--accent-purple);box-shadow:0 0 20px var(--glow-purple)}.ai-key-btn.detecting{animation:pp 1.5s infinite}@keyframes pp{0%,100%{box-shadow:0 0 10px var(--glow-purple)}50%{box-shadow:0 0 30px var(--glow-purple)}}.ai-indicator{display:none;margin-top:8px;width:36px;height:36px;position:relative}.ai-indicator.active{display:block}.ai-ring{position:absolute;width:100%;height:100%;border:2px solid transparent;border-top-color:var(--accent-purple);border-radius:50%;animation:spin 1s linear infinite}.ai-ring:nth-child(2){width:70%;height:70%;top:15%;left:15%;border-top-color:var(--accent-cyan);animation-duration:.8s;animation-direction:reverse}@keyframes spin{to{transform:rotate(360deg)}}.detected-key{display:none;margin-top:6px;font-size:11px;font-weight:600;color:var(--accent-purple)}.detected-key.show{display:block;animation:fi .3s ease}@keyframes fi{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+  .knobs-section{padding:0 20px;margin-bottom:16px}.knobs-row{display:flex;justify-content:center;align-items:flex-end;gap:35px}.knob-container{display:flex;flex-direction:column;align-items:center}.knob-label{font-size:9px;font-weight:500;letter-spacing:1.5px;color:var(--text-secondary);margin-bottom:12px;text-transform:uppercase}.knob-wrapper{position:relative;width:64px;height:64px;cursor:grab}.knob-wrapper:active{cursor:grabbing}.knob-glow{position:absolute;top:-6px;left:-6px;right:-6px;bottom:-6px;border-radius:50%;background:conic-gradient(from 225deg,transparent 0deg,var(--accent-cyan) 0deg,var(--accent-cyan) calc(var(--ka,0)*1deg),transparent calc(var(--ka,0)*1deg));opacity:.5;filter:blur(4px)}.knob-glow.mg{background:conic-gradient(from 225deg,transparent 0deg,var(--accent-magenta) 0deg,var(--accent-magenta) calc(var(--ka,0)*1deg),transparent calc(var(--ka,0)*1deg))}.knob-track-fill{position:absolute;top:-4px;left:-4px;right:-4px;bottom:-4px;border-radius:50%;background:conic-gradient(from 225deg,var(--accent-cyan) 0deg,var(--accent-cyan) calc(var(--ka,0)*1deg),transparent calc(var(--ka,0)*1deg));mask:radial-gradient(circle,transparent 28px,#000 29px,#000 32px,transparent 33px);-webkit-mask:radial-gradient(circle,transparent 28px,#000 29px,#000 32px,transparent 33px)}.knob-track-fill.mg{background:conic-gradient(from 225deg,var(--accent-magenta) 0deg,var(--accent-magenta) calc(var(--ka,0)*1deg),transparent calc(var(--ka,0)*1deg))}.knob-outer{position:absolute;inset:0;border-radius:50%;background:linear-gradient(135deg,#4a4a4a,#2a2a2a 25%,#1a1a1a 50%,#2a2a2a 75%,#3a3a3a);box-shadow:0 8px 20px rgba(0,0,0,.6),inset 0 2px 3px rgba(255,255,255,.1),inset 0 -2px 3px rgba(0,0,0,.3)}.knob-inner{position:absolute;top:8px;left:8px;right:8px;bottom:8px;border-radius:50%;background:radial-gradient(ellipse at 30% 30%,#3a3a3a,#1a1a1a 50%,#0f0f0f);box-shadow:inset 0 4px 8px rgba(0,0,0,.6),inset 0 -2px 4px rgba(255,255,255,.05)}.knob-cap{position:absolute;top:14px;left:14px;right:14px;bottom:14px;border-radius:50%;background:linear-gradient(145deg,#2a2a2a,#1a1a1a 50%,#111);box-shadow:0 2px 6px rgba(0,0,0,.4),inset 0 1px 2px rgba(255,255,255,.08)}.knob-highlight{position:absolute;top:4px;left:12px;width:20px;height:8px;background:linear-gradient(180deg,rgba(255,255,255,.25),transparent);border-radius:50%;filter:blur(1px)}.knob-pointer{position:absolute;top:6px;left:50%;width:3px;height:14px;transform:translateX(-50%);transform-origin:center 26px;border-radius:2px;background:linear-gradient(180deg,#fff,#e0e0e0 30%,#aaa);box-shadow:0 0 6px rgba(255,255,255,.5),0 0 12px {{ cyan | color_modify: 'alpha', 0.3 }}}.knob-value{margin-top:10px;font-family:'Space Mono',monospace;font-size:11px;color:var(--text-secondary)}
+  .meter{display:flex;flex-direction:column;align-items:center;gap:6px}.meter-label{font-size:8px;font-weight:600;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase}.meter-bar{width:8px;height:64px;background:rgba(0,0,0,.4);border-radius:4px;overflow:hidden;position:relative}.meter-fill{position:absolute;bottom:0;width:100%;border-radius:4px;transition:height .15s}.meter-fill.input{background:linear-gradient(180deg,var(--accent-cyan),#00b8d4);box-shadow:0 0 10px var(--glow-cyan)}.meter-fill.output{background:linear-gradient(180deg,var(--accent-magenta),#ff5722);box-shadow:0 0 10px var(--glow-magenta)}
+  .formant-section{max-height:0;overflow:hidden;transition:max-height .5s ease,opacity .4s ease,margin .4s ease;opacity:0;margin:0 20px}.formant-section.active{max-height:300px;opacity:1;margin:0 20px 20px}.formant-container{background:linear-gradient(180deg,rgba(22,22,26,.8),rgba(17,17,20,.8));border:1px solid {{ purple | color_modify: 'alpha', 0.15 }};border-radius:14px;padding:20px 24px 28px}.formant-header{font-size:10px;font-weight:700;letter-spacing:3px;margin-bottom:22px;text-transform:uppercase;text-align:center;color:var(--accent-purple)}.formant-row{display:flex;align-items:center;justify-content:center;gap:12px}.pf-knob-unit{display:flex;flex-direction:column;align-items:center;gap:12px}.pf-knob-label{font-size:11px;font-weight:600;letter-spacing:2px;color:var(--text-secondary);text-transform:uppercase}.pf-knob-wrapper{position:relative;width:80px;height:80px;cursor:grab}.pf-knob-glow{position:absolute;top:-7px;left:-7px;right:-7px;bottom:-7px;border-radius:50%;background:conic-gradient(from 225deg,transparent 0deg,var(--accent-purple) 0deg,var(--accent-purple) calc(var(--ka,0)*1deg),transparent calc(var(--ka,0)*1deg));opacity:.5;filter:blur(5px)}.pf-knob-glow.mg{background:conic-gradient(from 225deg,transparent 0deg,var(--accent-magenta) 0deg,var(--accent-magenta) calc(var(--ka,0)*1deg),transparent calc(var(--ka,0)*1deg))}.pf-knob-track-fill{position:absolute;top:-5px;left:-5px;right:-5px;bottom:-5px;border-radius:50%;background:conic-gradient(from 225deg,var(--accent-purple) 0deg,var(--accent-purple) calc(var(--ka,0)*1deg),transparent calc(var(--ka,0)*1deg));mask:radial-gradient(circle,transparent 35px,#000 36px,#000 39px,transparent 40px);-webkit-mask:radial-gradient(circle,transparent 35px,#000 36px,#000 39px,transparent 40px)}.pf-knob-track-fill.mg{background:conic-gradient(from 225deg,var(--accent-magenta) 0deg,var(--accent-magenta) calc(var(--ka,0)*1deg),transparent calc(var(--ka,0)*1deg))}.pf-knob-outer{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 180deg,#4a4a4a 0deg,#2a2a2a 90deg,#1a1a1a 180deg,#2a2a2a 270deg,#4a4a4a 360deg);box-shadow:0 10px 30px rgba(0,0,0,.7),inset 0 2px 4px rgba(255,255,255,.1),inset 0 -3px 6px rgba(0,0,0,.4)}.pf-knob-inner{position:absolute;top:10px;left:10px;right:10px;bottom:10px;border-radius:50%;background:radial-gradient(ellipse at 35% 35%,#3a3a3a,#1f1f1f 40%,#111);box-shadow:inset 0 5px 15px rgba(0,0,0,.6)}.pf-knob-cap{position:absolute;top:18px;left:18px;right:18px;bottom:18px;border-radius:50%;background:linear-gradient(145deg,#282828,#1a1a1a 50%,#101010);box-shadow:0 3px 10px rgba(0,0,0,.5),inset 0 1px 2px rgba(255,255,255,.06)}.pf-knob-highlight{position:absolute;top:6px;left:18px;width:28px;height:10px;background:linear-gradient(180deg,rgba(255,255,255,.2),transparent);border-radius:50%;filter:blur(2px)}.pf-knob-pointer{position:absolute;top:8px;left:50%;width:4px;height:18px;transform:translateX(-50%);transform-origin:center 32px;border-radius:2px;background:linear-gradient(180deg,#fff,#e8e8e8 40%,#aaa);box-shadow:0 0 8px rgba(255,255,255,.6)}.pf-knob-value{margin-top:8px;font-family:'Space Mono',monospace;font-size:12px;color:var(--text-secondary)}
+  .pf-link-section{display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 10px}.pf-link-line{width:28px;height:2px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent)}.pf-link-btn{width:44px;height:44px;background:linear-gradient(145deg,#2a2a2c,#1a1a1c 50%,#0f0f0f);border:1px solid rgba(255,255,255,.08);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;box-shadow:0 4px 12px rgba(0,0,0,.5),inset 0 1px 1px rgba(255,255,255,.05)}.pf-link-btn:hover{border-color:rgba(255,255,255,.15)}.pf-link-btn.active{background:linear-gradient(145deg,var(--accent-cyan),#00b8d4);border-color:var(--accent-cyan);box-shadow:0 0 25px var(--glow-cyan)}.pf-link-btn svg{width:20px;height:20px;stroke:var(--text-dim);stroke-width:2}.pf-link-btn.active svg{stroke:#000}.pf-link-label{font-size:8px;font-weight:600;letter-spacing:1px;color:var(--text-dim);text-transform:uppercase}.pf-mix-labels{display:flex;justify-content:space-between;width:80px;font-size:9px;font-weight:600;color:var(--text-dim);text-transform:uppercase;margin-top:-2px}
+  .footer{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:rgba(0,0,0,.3);border-top:1px solid rgba(255,255,255,.04)}.footer-buttons{display:flex;gap:8px}.footer-btn{background:transparent;border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:5px 10px;color:var(--text-dim);font-size:8px;font-weight:600;letter-spacing:1px;cursor:pointer;transition:all .2s}.footer-btn:hover{border-color:rgba(255,255,255,.2);color:var(--text-secondary)}.footer-btn.active{border-color:var(--accent-cyan);color:var(--accent-cyan)}.brand-url{font-size:10px;color:var(--text-dim);font-weight:500;letter-spacing:1px}.keyboard-hint{margin-top:14px;text-align:center;font-size:10px;color:var(--text-dim)}.keyboard-hint span{display:inline-block;background:rgba(255,255,255,.05);padding:3px 8px;border-radius:4px;margin:0 4px;font-family:'Space Mono',monospace}
+</style>
+
+<div class="vt-stage vt-{{ section.id }}" data-section-id="{{ section.id }}">
+  <div class="plugin">
+    <div class="plugin-bg"></div><div class="plugin-overlay"></div>
+    <div class="plugin-content">
+      <div class="header">
+        <div class="header-left">
+          <button class="btn" id="bypassBtn" onclick="toggleBypass()">{{ section.settings.bypass_label | default: 'BYPASS' }}</button>
+          <button class="btn" id="formantBtn" onclick="toggleFormant()">{{ section.settings.formant_label | default: 'FORMANT' }}</button>
+        </div>
+        <div class="preset-wrapper">
+          <div class="preset-selector" onclick="togglePresets(event)"><span class="preset-arrow" onclick="prevPreset(event)">&#9664;</span><span class="preset-name" id="presetName">{{ first_preset }}</span><span class="preset-arrow" onclick="nextPreset(event)">&#9654;</span></div>
+          <div class="preset-dropdown" id="presetDropdown">
+            {%- assign last_cat = '' -%}
+            {%- for block in section.blocks -%}
+              {%- if block.type == 'preset' -%}
+                {%- if block.settings.category != last_cat -%}
+                  {%- unless forloop.first -%}<div class="preset-divider"></div>{%- endunless -%}
+                  <div class="preset-category">{{ block.settings.category }}</div>
+                  {%- assign last_cat = block.settings.category -%}
+                {%- endif -%}
+                <div class="preset-item{% if forloop.first %} active{% endif %}" onclick="selectPreset(this)" {{ block.shopify_attributes }}>{{ block.settings.name }}</div>
+              {%- endif -%}
+            {%- endfor -%}
+          </div>
+        </div>
+      </div>
+      <div class="logo-section"><div class="logo"><div class="logo-vox">{{ section.settings.logo_vox | default: 'VOX' }}</div><div class="logo-bar"><div class="logo-tune">{{ section.settings.logo_tune | default: 'TUNE' }}</div></div></div></div>
+      <div class="visualizer-section"><div class="visualizer-container"><div class="visualizer-header"><span class="visualizer-label">{{ section.settings.visualizer_label | default: 'Pitch Detection' }}</span><div class="note-display"><span class="current-note" id="currentNote">--</span><span class="current-freq" id="currentFreq">0 Hz</span></div></div><div class="waveform-wrapper"><canvas class="waveform-canvas" id="waveform"></canvas></div></div></div>
+      <div class="key-scale-section"><div class="key-scale-row">
+        <div class="control-box"><div class="control-box-label">{{ section.settings.key_label | default: 'Key' }}</div><select class="control-select" id="keySelect"><option value="0">C</option><option value="1">C#</option><option value="2">D</option><option value="3">D#</option><option value="4">E</option><option value="5">F</option><option value="6">F#</option><option value="7">G</option><option value="8">G#</option><option value="9">A</option><option value="10">A#</option><option value="11">B</option><option value="12">Chromatic</option></select></div>
+        <div class="control-box"><div class="control-box-label">{{ section.settings.scale_label | default: 'Scale' }}</div><select class="control-select" id="scaleSelect"><option value="0">Major</option><option value="1">Minor</option><option value="2">Dorian</option><option value="3">Phrygian</option><option value="4">Lydian</option><option value="5">Mixolydian</option><option value="6">Locrian</option><option value="7">Harmonic Minor</option><option value="8">Melodic Minor</option><option value="9">Pentatonic Major</option><option value="10">Pentatonic Minor</option><option value="11">Blues</option><option value="12">Chromatic</option></select></div>
+        <div class="control-box ai-key-box"><button class="ai-key-btn" id="aiKeyBtn" onclick="triggerAI()">{{ section.settings.ai_label | default: 'AI AUTO KEY' }}</button><div class="ai-indicator" id="aiIndicator"><div class="ai-ring"></div><div class="ai-ring"></div></div><div class="detected-key" id="detectedKey"></div></div>
+      </div></div>
+      <div class="knobs-section"><div class="knobs-row">
+        <div class="knob-container"><div class="knob-label">{{ section.settings.speed_label | default: 'Speed' }}</div><div class="knob-wrapper" id="speedK" data-v="{{ section.settings.speed_default | default: 20 }}"><div class="knob-glow"></div><div class="knob-track-fill"></div><div class="knob-outer"></div><div class="knob-inner"></div><div class="knob-cap"></div><div class="knob-highlight"></div><div class="knob-pointer"></div></div><div class="knob-value" id="speedV">20%</div></div>
+        <div class="knob-container"><div class="knob-label">{{ section.settings.humanize_label | default: 'Humanize' }}</div><div class="knob-wrapper" id="humanizeK" data-v="{{ section.settings.humanize_default | default: 0 }}"><div class="knob-glow"></div><div class="knob-track-fill"></div><div class="knob-outer"></div><div class="knob-inner"></div><div class="knob-cap"></div><div class="knob-highlight"></div><div class="knob-pointer"></div></div><div class="knob-value" id="humanizeV">0%</div></div>
+        <div class="knob-container"><div class="knob-label">{{ section.settings.mix_label | default: 'Mix' }}</div><div class="knob-wrapper" id="mixK" data-v="{{ section.settings.mix_default | default: 100 }}"><div class="knob-glow mg"></div><div class="knob-track-fill mg"></div><div class="knob-outer"></div><div class="knob-inner"></div><div class="knob-cap"></div><div class="knob-highlight"></div><div class="knob-pointer"></div></div><div class="knob-value" id="mixV">100%</div></div>
+        <div class="meter"><div class="meter-label">In</div><div class="meter-bar"><div class="meter-fill input" id="mIn" style="height:0%"></div></div></div>
+        <div class="meter"><div class="meter-label">Out</div><div class="meter-bar"><div class="meter-fill output" id="mOut" style="height:0%"></div></div></div>
+      </div></div>
+      <div class="formant-section" id="formantSection"><div class="formant-container"><div class="formant-header">{{ section.settings.formant_header | default: 'VoxShift Pro' }}</div><div class="formant-row">
+        <div class="pf-knob-unit"><span class="pf-knob-label">Pitch</span><div class="pf-knob-wrapper" id="pitchK" data-v="0"><div class="pf-knob-glow"></div><div class="pf-knob-track-fill"></div><div class="pf-knob-outer"></div><div class="pf-knob-inner"></div><div class="pf-knob-cap"></div><div class="pf-knob-highlight"></div><div class="pf-knob-pointer"></div></div><div class="pf-knob-value" id="pitchV">0.0</div></div>
+        <div class="pf-link-section"><div class="pf-link-line"></div><button class="pf-link-btn" id="linkBtn" onclick="toggleLink()"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button><span class="pf-link-label">Link</span><div class="pf-link-line"></div></div>
+        <div class="pf-knob-unit"><span class="pf-knob-label">Formant</span><div class="pf-knob-wrapper" id="formantK" data-v="0"><div class="pf-knob-glow"></div><div class="pf-knob-track-fill"></div><div class="pf-knob-outer"></div><div class="pf-knob-inner"></div><div class="pf-knob-cap"></div><div class="pf-knob-highlight"></div><div class="pf-knob-pointer"></div></div><div class="pf-knob-value" id="formantV">0.0</div></div>
+        <div class="pf-knob-unit" style="margin-left:24px"><span class="pf-knob-label">Mix</span><div class="pf-knob-wrapper" id="fMixK" data-v="100"><div class="pf-knob-glow mg"></div><div class="pf-knob-track-fill mg"></div><div class="pf-knob-outer"></div><div class="pf-knob-inner"></div><div class="pf-knob-cap"></div><div class="pf-knob-highlight"></div><div class="pf-knob-pointer"></div></div><div class="pf-mix-labels"><span>DRY</span><span>WET</span></div></div>
+      </div></div></div>
+      <div class="footer"><div class="footer-buttons"><button class="footer-btn" id="lowLatBtn" onclick="toggleLowLat()">{{ section.settings.low_latency_label | default: 'LOW LATENCY' }}</button></div><div class="brand-url">{{ section.settings.brand_url | default: 'vox-tune.com' }}</div></div>
+    </div>
+  </div>
+  {%- if section.settings.show_keyboard_hint -%}
+  <div class="keyboard-hint"><span>B</span> Bypass <span>F</span> Formant <span>A</span> AI Auto Key <span>L</span> Link</div>
+  {%- endif -%}
+</div>
+
+<script>
+  window.VOXTUNE_CONFIG = {
+    cyan: {{ cyan | json }},
+    magenta: {{ magenta | json }},
+    presets: [
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'preset' -%}
+          {"name": {{ block.settings.name | json }}, "v": [{{ block.settings.speed | default: 20 }}, {{ block.settings.humanize | default: 0 }}, {{ block.settings.mix | default: 100 }}]}{%- unless forloop.last -%},{%- endunless -%}
+        {%- endif -%}
+      {%- endfor -%}
+    ]
+  };
+</script>
+<script src="{{ 'voxtune.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "VoxTune Plugin",
+  "tag": "section",
+  "class": "voxtune-section",
+  "settings": [
+    { "type": "header", "content": "Brand / Logo" },
+    { "type": "text", "id": "logo_vox", "label": "Logo (top)", "default": "VOX" },
+    { "type": "text", "id": "logo_tune", "label": "Logo (bar)", "default": "TUNE" },
+    { "type": "text", "id": "brand_url", "label": "Footer URL text", "default": "vox-tune.com" },
+    { "type": "header", "content": "Header buttons" },
+    { "type": "text", "id": "bypass_label", "label": "Bypass button", "default": "BYPASS" },
+    { "type": "text", "id": "formant_label", "label": "Formant button", "default": "FORMANT" },
+    { "type": "text", "id": "low_latency_label", "label": "Low latency button", "default": "LOW LATENCY" },
+    { "type": "header", "content": "Labels" },
+    { "type": "text", "id": "visualizer_label", "label": "Visualizer label", "default": "Pitch Detection" },
+    { "type": "text", "id": "key_label", "label": "Key label", "default": "Key" },
+    { "type": "text", "id": "scale_label", "label": "Scale label", "default": "Scale" },
+    { "type": "text", "id": "ai_label", "label": "AI button", "default": "AI AUTO KEY" },
+    { "type": "text", "id": "formant_header", "label": "Formant section title", "default": "VoxShift Pro" },
+    { "type": "header", "content": "Knobs" },
+    { "type": "text", "id": "speed_label", "label": "Knob 1 label", "default": "Speed" },
+    { "type": "range", "id": "speed_default", "label": "Knob 1 default", "min": 0, "max": 100, "step": 1, "unit": "%", "default": 20 },
+    { "type": "text", "id": "humanize_label", "label": "Knob 2 label", "default": "Humanize" },
+    { "type": "range", "id": "humanize_default", "label": "Knob 2 default", "min": 0, "max": 100, "step": 1, "unit": "%", "default": 0 },
+    { "type": "text", "id": "mix_label", "label": "Knob 3 label", "default": "Mix" },
+    { "type": "range", "id": "mix_default", "label": "Knob 3 default", "min": 0, "max": 100, "step": 1, "unit": "%", "default": 100 },
+    { "type": "header", "content": "Colors" },
+    { "type": "color", "id": "accent_cyan", "label": "Accent cyan", "default": "#00e5ff" },
+    { "type": "color", "id": "accent_magenta", "label": "Accent magenta", "default": "#ff2d92" },
+    { "type": "color", "id": "accent_purple", "label": "Accent purple", "default": "#a855f7" },
+    { "type": "color", "id": "text_primary", "label": "Text primary", "default": "#f5f5f0" },
+    { "type": "color", "id": "text_secondary", "label": "Text secondary", "default": "#888888" },
+    { "type": "color", "id": "text_dim", "label": "Text dim", "default": "#555555" },
+    { "type": "color", "id": "bg_color", "label": "Page background", "default": "#000000" },
+    { "type": "header", "content": "Layout" },
+    { "type": "range", "id": "plugin_width", "label": "Plugin width", "min": 320, "max": 900, "step": 10, "unit": "px", "default": 700 },
+    { "type": "checkbox", "id": "show_keyboard_hint", "label": "Show keyboard hint", "default": true }
+  ],
+  "blocks": [
+    {
+      "type": "preset",
+      "name": "Preset",
+      "settings": [
+        { "type": "text", "id": "category", "label": "Category", "default": "Essential" },
+        { "type": "text", "id": "name", "label": "Preset name", "default": "Natural" },
+        { "type": "range", "id": "speed", "label": "Speed %", "min": 0, "max": 100, "step": 1, "default": 20 },
+        { "type": "range", "id": "humanize", "label": "Humanize %", "min": 0, "max": 100, "step": 1, "default": 0 },
+        { "type": "range", "id": "mix", "label": "Mix %", "min": 0, "max": 100, "step": 1, "default": 100 }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "VoxTune Plugin",
+      "blocks": [
+        { "type": "preset", "settings": { "category": "Essential", "name": "Natural", "speed": 20, "humanize": 0, "mix": 100 } },
+        { "type": "preset", "settings": { "category": "Essential", "name": "Hard Tune", "speed": 0, "humanize": 0, "mix": 100 } },
+        { "type": "preset", "settings": { "category": "Essential", "name": "Soft Correction", "speed": 55, "humanize": 30, "mix": 65 } },
+        { "type": "preset", "settings": { "category": "Genres", "name": "Pop Vocal", "speed": 18, "humanize": 10, "mix": 100 } },
+        { "type": "preset", "settings": { "category": "Genres", "name": "R&B Smooth", "speed": 35, "humanize": 35, "mix": 85 } },
+        { "type": "preset", "settings": { "category": "Genres", "name": "Trap Vocal", "speed": 2, "humanize": 0, "mix": 100 } },
+        { "type": "preset", "settings": { "category": "Genres", "name": "Hip Hop Clean", "speed": 24, "humanize": 12, "mix": 90 } },
+        { "type": "preset", "settings": { "category": "Creative", "name": "Robot", "speed": 0, "humanize": 0, "mix": 100 } },
+        { "type": "preset", "settings": { "category": "Creative", "name": "Deep Voice", "speed": 12, "humanize": 5, "mix": 100 } },
+        { "type": "preset", "settings": { "category": "Creative", "name": "Chipmunk", "speed": 8, "humanize": 0, "mix": 100 } },
+        { "type": "preset", "settings": { "category": "Creative", "name": "Lo-Fi", "speed": 70, "humanize": 50, "mix": 55 } },
+        { "type": "preset", "settings": { "category": "Live", "name": "Live Mode", "speed": 0, "humanize": 0, "mix": 100 } },
+        { "type": "preset", "settings": { "category": "Live", "name": "Studio Vocal", "speed": 22, "humanize": 18, "mix": 95 } }
+      ]
+    }
+  ]
+}
+{% endschema %}
