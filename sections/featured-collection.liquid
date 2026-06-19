@@ -13,7 +13,7 @@
     </div>
 
     <div class="product-grid">
-      {%- assign featured_collection = collections[section.settings.collection] -%}
+      {%- assign featured_collection = section.settings.collection -%}
       {%- for product in featured_collection.products limit: section.settings.products_to_show -%}
         <article class="product-card">
           <a href="{{ product.url }}" class="product-card__media">
