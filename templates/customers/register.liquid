@@ -1,0 +1,13 @@
+<div class="page-width">
+  <h1>{{ 'customer.register.title' | t | default: 'Create account' }}</h1>
+  <div class="rte">
+    {% form 'create_customer' %}
+      {{ form.errors | default_errors }}
+      <label>{{ 'customer.register.first_name' | t | default: 'First name' }}<input type="text" name="customer[first_name]"></label>
+      <label>{{ 'customer.register.last_name' | t | default: 'Last name' }}<input type="text" name="customer[last_name]"></label>
+      <label>{{ 'customer.register.email' | t | default: 'Email' }}<input type="email" name="customer[email]"></label>
+      <label>{{ 'customer.register.password' | t | default: 'Password' }}<input type="password" name="customer[password]"></label>
+      <button type="submit">{{ 'customer.register.submit' | t | default: 'Create' }}</button>
+    {% endform %}
+  </div>
+</div>

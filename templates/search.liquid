@@ -1,0 +1,21 @@
+<div class="page-width">
+  <h1>{{ 'general.search.title' | t | default: 'Search' }}</h1>
+  <div class="rte">
+    {% form 'search' %}
+      <input type="search" name="q" value="{{ search.terms | escape }}" placeholder="{{ 'general.search.placeholder' | t | default: 'Search' }}">
+      <button type="submit">{{ 'general.search.submit' | t | default: 'Search' }}</button>
+    {% endform %}
+    {% if search.performed %}
+      {% paginate search.results by 20 %}
+        <ul>
+          {% for item in search.results %}
+            <li><a href="{{ item.url }}">{{ item.title }}</a></li>
+          {% else %}
+            <li>{{ 'general.search.no_results' | t | default: 'No results' }}</li>
+          {% endfor %}
+        </ul>
+        {{ paginate | default_pagination }}
+      {% endpaginate %}
+    {% endif %}
+  </div>
+</div>

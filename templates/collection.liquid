@@ -1,0 +1,16 @@
+<div class="page-width">
+  <h1>{{ collection.title }}</h1>
+  <div class="rte">
+    {{ collection.description }}
+    {% paginate collection.products by 24 %}
+      <ul>
+        {% for product in collection.products %}
+          <li><a href="{{ product.url }}">{{ product.title }}</a> — {{ product.price | money }}</li>
+        {% else %}
+          <li>{{ 'collections.general.no_matches' | t | default: 'No products found' }}</li>
+        {% endfor %}
+      </ul>
+      {{ paginate | default_pagination }}
+    {% endpaginate %}
+  </div>
+</div>

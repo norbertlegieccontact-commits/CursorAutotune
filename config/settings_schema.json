@@ -1,0 +1,24 @@
+[
+  {
+    "name": "theme_info",
+    "theme_name": "VoxTune",
+    "theme_version": "1.0.0",
+    "theme_author": "VoxTune",
+    "theme_documentation_url": "https://vox-tune.com",
+    "theme_support_url": "https://vox-tune.com"
+  },
+  {
+    "name": "Colors",
+    "settings": [
+      { "type": "color", "id": "bg_color", "label": "Page background", "default": "#000000" },
+      { "type": "color", "id": "text_primary", "label": "Text primary", "default": "#f5f5f0" },
+      { "type": "color", "id": "text_secondary", "label": "Text secondary", "default": "#888888" }
+    ]
+  },
+  {
+    "name": "Favicon",
+    "settings": [
+      { "type": "image_picker", "id": "favicon", "label": "Favicon", "info": "Square PNG, at least 32 x 32 px." }
+    ]
+  }
+]

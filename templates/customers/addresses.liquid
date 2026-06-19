@@ -1,0 +1,9 @@
+<div class="page-width">
+  <h1>{{ 'customer.addresses.title' | t | default: 'Addresses' }}</h1>
+  <div class="rte">
+    <p><a href="{{ routes.account_url }}">{{ 'customer.account.return' | t | default: 'Back to account' }}</a></p>
+    {% for address in customer.addresses %}
+      <p>{{ address | format_address }}</p>
+    {% endfor %}
+  </div>
+</div>

@@ -1,0 +1,83 @@
+{
+  "general": {
+    "continue_shopping": "Continue shopping",
+    "404": {
+      "title": "Page not found",
+      "link": "Continue shopping"
+    },
+    "search": {
+      "title": "Search",
+      "placeholder": "Search",
+      "submit": "Search",
+      "no_results": "No results found"
+    }
+  },
+  "products": {
+    "product": {
+      "add_to_cart": "Add to cart"
+    }
+  },
+  "collections": {
+    "general": {
+      "no_matches": "No products found"
+    },
+    "list": {
+      "title": "Collections"
+    }
+  },
+  "cart": {
+    "general": {
+      "title": "Cart",
+      "subtotal": "Subtotal",
+      "checkout": "Checkout",
+      "empty": "Your cart is empty"
+    }
+  },
+  "customer": {
+    "login": {
+      "title": "Login",
+      "email": "Email",
+      "password": "Password",
+      "sign_in": "Sign in",
+      "create_account": "Create account"
+    },
+    "register": {
+      "title": "Create account",
+      "first_name": "First name",
+      "last_name": "Last name",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Create"
+    },
+    "account": {
+      "title": "My account",
+      "welcome": "Welcome",
+      "view_addresses": "View addresses",
+      "log_out": "Log out",
+      "return": "Back to account"
+    },
+    "orders": {
+      "title": "Orders",
+      "none": "No orders yet"
+    },
+    "order": {
+      "title": "Order",
+      "total": "Total"
+    },
+    "addresses": {
+      "title": "Addresses"
+    },
+    "activate_account": {
+      "title": "Activate account",
+      "password": "Password",
+      "password_confirmation": "Confirm password",
+      "submit": "Activate"
+    },
+    "reset_password": {
+      "title": "Reset password",
+      "password": "Password",
+      "password_confirmation": "Confirm password",
+      "submit": "Reset"
+    }
+  }
+}

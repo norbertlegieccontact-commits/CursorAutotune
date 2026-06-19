@@ -1,0 +1,11 @@
+<div class="page-width">
+  <h1>{{ 'customer.activate_account.title' | t | default: 'Activate account' }}</h1>
+  <div class="rte">
+    {% form 'activate_customer_password' %}
+      {{ form.errors | default_errors }}
+      <label>{{ 'customer.activate_account.password' | t | default: 'Password' }}<input type="password" name="customer[password]"></label>
+      <label>{{ 'customer.activate_account.password_confirmation' | t | default: 'Confirm password' }}<input type="password" name="customer[password_confirmation]"></label>
+      <button type="submit" name="commit">{{ 'customer.activate_account.submit' | t | default: 'Activate' }}</button>
+    {% endform %}
+  </div>
+</div>

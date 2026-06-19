@@ -1,0 +1,19 @@
+<div class="page-width">
+  <h1>{{ 'cart.general.title' | t | default: 'Cart' }}</h1>
+  <div class="rte">
+    {% if cart.item_count > 0 %}
+      {% form 'cart', cart %}
+        <ul>
+          {% for item in cart.items %}
+            <li><a href="{{ item.url }}">{{ item.product.title }}</a> &times; {{ item.quantity }} — {{ item.final_line_price | money }}</li>
+          {% endfor %}
+        </ul>
+        <p>{{ 'cart.general.subtotal' | t | default: 'Subtotal' }}: {{ cart.total_price | money }}</p>
+        <button type="submit" name="checkout">{{ 'cart.general.checkout' | t | default: 'Checkout' }}</button>
+      {% endform %}
+    {% else %}
+      <p>{{ 'cart.general.empty' | t | default: 'Your cart is empty' }}</p>
+      <p><a href="{{ routes.all_products_collection_url }}">{{ 'general.continue_shopping' | t | default: 'Continue shopping' }}</a></p>
+    {% endif %}
+  </div>
+</div>

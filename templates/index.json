@@ -1,0 +1,24 @@
+{
+  "sections": {
+    "voxtune": {
+      "type": "voxtune-plugin",
+      "blocks": {
+        "p1": { "type": "preset", "settings": { "category": "Essential", "name": "Natural", "speed": 20, "humanize": 0, "mix": 100 } },
+        "p2": { "type": "preset", "settings": { "category": "Essential", "name": "Hard Tune", "speed": 0, "humanize": 0, "mix": 100 } },
+        "p3": { "type": "preset", "settings": { "category": "Essential", "name": "Soft Correction", "speed": 55, "humanize": 30, "mix": 65 } },
+        "p4": { "type": "preset", "settings": { "category": "Genres", "name": "Pop Vocal", "speed": 18, "humanize": 10, "mix": 100 } },
+        "p5": { "type": "preset", "settings": { "category": "Genres", "name": "R&B Smooth", "speed": 35, "humanize": 35, "mix": 85 } },
+        "p6": { "type": "preset", "settings": { "category": "Genres", "name": "Trap Vocal", "speed": 2, "humanize": 0, "mix": 100 } },
+        "p7": { "type": "preset", "settings": { "category": "Genres", "name": "Hip Hop Clean", "speed": 24, "humanize": 12, "mix": 90 } },
+        "p8": { "type": "preset", "settings": { "category": "Creative", "name": "Robot", "speed": 0, "humanize": 0, "mix": 100 } },
+        "p9": { "type": "preset", "settings": { "category": "Creative", "name": "Deep Voice", "speed": 12, "humanize": 5, "mix": 100 } },
+        "p10": { "type": "preset", "settings": { "category": "Creative", "name": "Chipmunk", "speed": 8, "humanize": 0, "mix": 100 } },
+        "p11": { "type": "preset", "settings": { "category": "Creative", "name": "Lo-Fi", "speed": 70, "humanize": 50, "mix": 55 } },
+        "p12": { "type": "preset", "settings": { "category": "Live", "name": "Live Mode", "speed": 0, "humanize": 0, "mix": 100 } },
+        "p13": { "type": "preset", "settings": { "category": "Live", "name": "Studio Vocal", "speed": 22, "humanize": 18, "mix": 95 } }
+      },
+      "block_order": ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8", "p9", "p10", "p11", "p12", "p13"]
+    }
+  },
+  "order": ["voxtune"]
+}

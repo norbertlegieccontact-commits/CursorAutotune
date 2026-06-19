@@ -1,0 +1,12 @@
+<div class="page-width">
+  <h1>{{ 'customer.order.title' | t | default: 'Order' }} {{ order.name }}</h1>
+  <div class="rte">
+    <p>{{ order.created_at | date: '%B %d, %Y' }}</p>
+    <ul>
+      {% for line_item in order.line_items %}
+        <li>{{ line_item.title }} &times; {{ line_item.quantity }} — {{ line_item.final_line_price | money }}</li>
+      {% endfor %}
+    </ul>
+    <p>{{ 'customer.order.total' | t | default: 'Total' }}: {{ order.total_price | money }}</p>
+  </div>
+</div>

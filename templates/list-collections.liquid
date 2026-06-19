@@ -1,0 +1,10 @@
+<div class="page-width">
+  <h1>{{ 'collections.list.title' | t | default: 'Collections' }}</h1>
+  <div class="rte">
+    <ul>
+      {% for collection in collections %}
+        <li><a href="{{ collection.url }}">{{ collection.title }}</a></li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>

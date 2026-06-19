@@ -1,0 +1,12 @@
+<div class="page-width">
+  <h1>{{ 'customer.login.title' | t | default: 'Login' }}</h1>
+  <div class="rte">
+    {% form 'customer_login' %}
+      {{ form.errors | default_errors }}
+      <label>{{ 'customer.login.email' | t | default: 'Email' }}<input type="email" name="customer[email]"></label>
+      <label>{{ 'customer.login.password' | t | default: 'Password' }}<input type="password" name="customer[password]"></label>
+      <button type="submit">{{ 'customer.login.sign_in' | t | default: 'Sign in' }}</button>
+    {% endform %}
+    <p><a href="{{ routes.account_register_url }}">{{ 'customer.login.create_account' | t | default: 'Create account' }}</a></p>
+  </div>
+</div>
