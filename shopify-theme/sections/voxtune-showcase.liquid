@@ -1,0 +1,463 @@
+{%- style -%}
+  #shopify-section-{{ section.id }} {
+    --accent-cyan: {{ section.settings.accent_cyan }};
+    --accent-magenta: {{ section.settings.accent_magenta }};
+    --accent-purple: {{ section.settings.accent_purple }};
+    --page-bg: {{ section.settings.page_background }};
+    --glow-cyan: {{ section.settings.accent_cyan | color_modify: 'alpha', 0.5 }};
+    --glow-magenta: {{ section.settings.accent_magenta | color_modify: 'alpha', 0.5 }};
+    --glow-purple: {{ section.settings.accent_purple | color_modify: 'alpha', 0.5 }};
+  }
+{%- endstyle -%}
+
+<div class="voxtune-showcase" id="voxtune-showcase-{{ section.id }}">
+  <div class="plugin">
+    <div class="plugin-bg"></div>
+    <div class="plugin-overlay"></div>
+    <div class="plugin-content">
+      <div class="header">
+        <div class="header-left">
+          <button type="button" class="btn" id="bypassBtn" onclick="toggleBypass()">BYPASS</button>
+          <button type="button" class="btn" id="formantBtn" onclick="toggleFormant()">FORMANT</button>
+        </div>
+        <div class="preset-wrapper">
+          <div class="preset-selector" onclick="togglePresets(event)">
+            <span class="preset-arrow" onclick="prevPreset(event)">&#9664;</span>
+            <span class="preset-name" id="presetName">{{ section.settings.default_preset }}</span>
+            <span class="preset-arrow" onclick="nextPreset(event)">&#9654;</span>
+          </div>
+          <div class="preset-dropdown" id="presetDropdown">
+            {%- assign current_category = '' -%}
+            {%- for block in section.blocks -%}
+              {%- if block.type == 'preset' -%}
+                {%- if block.settings.category != current_category -%}
+                  {%- unless forloop.first -%}<div class="preset-divider"></div>{%- endunless -%}
+                  <div class="preset-category" {{ block.shopify_attributes }}>{{ block.settings.category }}</div>
+                  {%- assign current_category = block.settings.category -%}
+                {%- endif -%}
+                <div
+                  class="preset-item{% if block.settings.name == section.settings.default_preset %} active{% endif %}"
+                  onclick="selectPreset(this)"
+                  data-speed="{{ block.settings.speed }}"
+                  data-humanize="{{ block.settings.humanize }}"
+                  data-mix="{{ block.settings.mix }}"
+                  {{ block.shopify_attributes }}
+                >
+                  {{- block.settings.name -}}
+                </div>
+              {%- endif -%}
+            {%- else -%}
+              <div class="preset-category">Essential</div>
+              <div class="preset-item active" onclick="selectPreset(this)">Natural</div>
+              <div class="preset-item" onclick="selectPreset(this)">Hard Tune</div>
+              <div class="preset-item" onclick="selectPreset(this)">Soft Correction</div>
+              <div class="preset-divider"></div>
+              <div class="preset-category">Genres</div>
+              <div class="preset-item" onclick="selectPreset(this)">Pop Vocal</div>
+              <div class="preset-item" onclick="selectPreset(this)">R&amp;B Smooth</div>
+              <div class="preset-item" onclick="selectPreset(this)">Trap Vocal</div>
+              <div class="preset-item" onclick="selectPreset(this)">Hip Hop Clean</div>
+              <div class="preset-divider"></div>
+              <div class="preset-category">Creative</div>
+              <div class="preset-item" onclick="selectPreset(this)">Robot</div>
+              <div class="preset-item" onclick="selectPreset(this)">Deep Voice</div>
+              <div class="preset-item" onclick="selectPreset(this)">Chipmunk</div>
+              <div class="preset-item" onclick="selectPreset(this)">Lo-Fi</div>
+              <div class="preset-divider"></div>
+              <div class="preset-category">Live</div>
+              <div class="preset-item" onclick="selectPreset(this)">Live Mode</div>
+              <div class="preset-item" onclick="selectPreset(this)">Studio Vocal</div>
+            {%- endfor -%}
+          </div>
+        </div>
+      </div>
+
+      <div class="logo-section">
+        <div class="logo">
+          <div class="logo-vox">{{ section.settings.logo_line_1 }}</div>
+          <div class="logo-bar">
+            <div class="logo-tune">{{ section.settings.logo_line_2 }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="visualizer-section">
+        <div class="visualizer-container">
+          <div class="visualizer-header">
+            <span class="visualizer-label">{{ section.settings.visualizer_label }}</span>
+            <div class="note-display">
+              <span class="current-note" id="currentNote">--</span>
+              <span class="current-freq" id="currentFreq">0 Hz</span>
+            </div>
+          </div>
+          <div class="waveform-wrapper">
+            <canvas class="waveform-canvas" id="waveform"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="key-scale-section">
+        <div class="key-scale-row">
+          <div class="control-box">
+            <div class="control-box-label">Key</div>
+            <select class="control-select" id="keySelect" aria-label="Key">
+              <option value="0">C</option>
+              <option value="1">C#</option>
+              <option value="2">D</option>
+              <option value="3">D#</option>
+              <option value="4">E</option>
+              <option value="5">F</option>
+              <option value="6">F#</option>
+              <option value="7">G</option>
+              <option value="8">G#</option>
+              <option value="9">A</option>
+              <option value="10">A#</option>
+              <option value="11">B</option>
+              <option value="12">Chromatic</option>
+            </select>
+          </div>
+          <div class="control-box">
+            <div class="control-box-label">Scale</div>
+            <select class="control-select" id="scaleSelect" aria-label="Scale">
+              <option value="0">Major</option>
+              <option value="1">Minor</option>
+              <option value="2">Dorian</option>
+              <option value="3">Phrygian</option>
+              <option value="4">Lydian</option>
+              <option value="5">Mixolydian</option>
+              <option value="6">Locrian</option>
+              <option value="7">Harmonic Minor</option>
+              <option value="8">Melodic Minor</option>
+              <option value="9">Pentatonic Major</option>
+              <option value="10">Pentatonic Minor</option>
+              <option value="11">Blues</option>
+              <option value="12">Chromatic</option>
+            </select>
+          </div>
+          <div class="control-box ai-key-box">
+            <button type="button" class="ai-key-btn" id="aiKeyBtn" onclick="triggerAI()">AI AUTO KEY</button>
+            <div class="ai-indicator" id="aiIndicator">
+              <div class="ai-ring"></div>
+              <div class="ai-ring"></div>
+            </div>
+            <div class="detected-key" id="detectedKey"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="knobs-section">
+        <div class="knobs-row">
+          <div class="knob-container">
+            <div class="knob-label">Speed</div>
+            <div class="knob-wrapper" id="speedK" data-v="20">
+              <div class="knob-glow"></div>
+              <div class="knob-track-fill"></div>
+              <div class="knob-outer"></div>
+              <div class="knob-inner"></div>
+              <div class="knob-cap"></div>
+              <div class="knob-highlight"></div>
+              <div class="knob-pointer"></div>
+            </div>
+            <div class="knob-value" id="speedV">20%</div>
+          </div>
+          <div class="knob-container">
+            <div class="knob-label">Humanize</div>
+            <div class="knob-wrapper" id="humanizeK" data-v="0">
+              <div class="knob-glow"></div>
+              <div class="knob-track-fill"></div>
+              <div class="knob-outer"></div>
+              <div class="knob-inner"></div>
+              <div class="knob-cap"></div>
+              <div class="knob-highlight"></div>
+              <div class="knob-pointer"></div>
+            </div>
+            <div class="knob-value" id="humanizeV">0%</div>
+          </div>
+          <div class="knob-container">
+            <div class="knob-label">Mix</div>
+            <div class="knob-wrapper" id="mixK" data-v="100">
+              <div class="knob-glow mg"></div>
+              <div class="knob-track-fill mg"></div>
+              <div class="knob-outer"></div>
+              <div class="knob-inner"></div>
+              <div class="knob-cap"></div>
+              <div class="knob-highlight"></div>
+              <div class="knob-pointer"></div>
+            </div>
+            <div class="knob-value" id="mixV">100%</div>
+          </div>
+          <div class="meter">
+            <div class="meter-label">In</div>
+            <div class="meter-bar">
+              <div class="meter-fill input" id="mIn" style="height:0%"></div>
+            </div>
+          </div>
+          <div class="meter">
+            <div class="meter-label">Out</div>
+            <div class="meter-bar">
+              <div class="meter-fill output" id="mOut" style="height:0%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="formant-section" id="formantSection">
+        <div class="formant-container">
+          <div class="formant-header">{{ section.settings.formant_title }}</div>
+          <div class="formant-row">
+            <div class="pf-knob-unit">
+              <span class="pf-knob-label">Pitch</span>
+              <div class="pf-knob-wrapper" id="pitchK" data-v="0">
+                <div class="pf-knob-glow"></div>
+                <div class="pf-knob-track-fill"></div>
+                <div class="pf-knob-outer"></div>
+                <div class="pf-knob-inner"></div>
+                <div class="pf-knob-cap"></div>
+                <div class="pf-knob-highlight"></div>
+                <div class="pf-knob-pointer"></div>
+              </div>
+              <div class="pf-knob-value" id="pitchV">0.0</div>
+            </div>
+            <div class="pf-link-section">
+              <div class="pf-link-line"></div>
+              <button type="button" class="pf-link-btn" id="linkBtn" onclick="toggleLink()" aria-label="Link pitch and formant">
+                <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+              </button>
+              <span class="pf-link-label">Link</span>
+              <div class="pf-link-line"></div>
+            </div>
+            <div class="pf-knob-unit">
+              <span class="pf-knob-label">Formant</span>
+              <div class="pf-knob-wrapper" id="formantK" data-v="0">
+                <div class="pf-knob-glow"></div>
+                <div class="pf-knob-track-fill"></div>
+                <div class="pf-knob-outer"></div>
+                <div class="pf-knob-inner"></div>
+                <div class="pf-knob-cap"></div>
+                <div class="pf-knob-highlight"></div>
+                <div class="pf-knob-pointer"></div>
+              </div>
+              <div class="pf-knob-value" id="formantV">0.0</div>
+            </div>
+            <div class="pf-knob-unit" style="margin-left:24px">
+              <span class="pf-knob-label">Mix</span>
+              <div class="pf-knob-wrapper" id="fMixK" data-v="100">
+                <div class="pf-knob-glow mg"></div>
+                <div class="pf-knob-track-fill mg"></div>
+                <div class="pf-knob-outer"></div>
+                <div class="pf-knob-inner"></div>
+                <div class="pf-knob-cap"></div>
+                <div class="pf-knob-highlight"></div>
+                <div class="pf-knob-pointer"></div>
+              </div>
+              <div class="pf-mix-labels">
+                <span>DRY</span>
+                <span>WET</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div class="footer-buttons">
+          <button type="button" class="footer-btn" id="lowLatBtn" onclick="toggleLowLat()">LOW LATENCY</button>
+        </div>
+        <div class="brand-url">
+          {%- if section.settings.brand_url_link != blank -%}
+            <a href="{{ section.settings.brand_url_link }}">{{ section.settings.brand_url }}</a>
+          {%- else -%}
+            {{ section.settings.brand_url }}
+          {%- endif -%}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {%- if section.settings.show_keyboard_hints -%}
+    <div class="keyboard-hint">
+      <span>B</span> Bypass
+      <span>F</span> Formant
+      <span>A</span> AI Auto Key
+      <span>L</span> Link
+    </div>
+  {%- endif -%}
+
+  {%- if section.settings.show_cta and section.settings.cta_label != blank -%}
+    <div class="voxtune-cta">
+      <a
+        class="voxtune-cta__button"
+        href="{{ section.settings.cta_link | default: '/collections/all' }}"
+      >
+        {{ section.settings.cta_label }}
+      </a>
+    </div>
+  {%- endif -%}
+</div>
+
+<script src="{{ 'voxtune.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "t:sections.voxtune_showcase.name",
+  "tag": "section",
+  "class": "voxtune-showcase-section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Branding"
+    },
+    {
+      "type": "text",
+      "id": "logo_line_1",
+      "label": "t:sections.voxtune_showcase.settings.logo_line_1.label",
+      "default": "VOX"
+    },
+    {
+      "type": "text",
+      "id": "logo_line_2",
+      "label": "t:sections.voxtune_showcase.settings.logo_line_2.label",
+      "default": "TUNE"
+    },
+    {
+      "type": "text",
+      "id": "brand_url",
+      "label": "t:sections.voxtune_showcase.settings.brand_url.label",
+      "default": "vox-tune.com"
+    },
+    {
+      "type": "url",
+      "id": "brand_url_link",
+      "label": "t:sections.voxtune_showcase.settings.brand_url_link.label"
+    },
+    {
+      "type": "text",
+      "id": "formant_title",
+      "label": "t:sections.voxtune_showcase.settings.formant_title.label",
+      "default": "VoxShift Pro"
+    },
+    {
+      "type": "text",
+      "id": "default_preset",
+      "label": "t:sections.voxtune_showcase.settings.default_preset.label",
+      "default": "Natural"
+    },
+    {
+      "type": "text",
+      "id": "visualizer_label",
+      "label": "t:sections.voxtune_showcase.settings.visualizer_label.label",
+      "default": "Pitch Detection"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_keyboard_hints",
+      "label": "t:sections.voxtune_showcase.settings.show_keyboard_hints.label",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Buy button"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_cta",
+      "label": "t:sections.voxtune_showcase.settings.show_cta.label",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "t:sections.voxtune_showcase.settings.cta_label.label",
+      "default": "Buy VoxTune"
+    },
+    {
+      "type": "url",
+      "id": "cta_link",
+      "label": "t:sections.voxtune_showcase.settings.cta_link.label"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.voxtune_showcase.settings.colors_header.content"
+    },
+    {
+      "type": "color",
+      "id": "accent_cyan",
+      "label": "t:sections.voxtune_showcase.settings.accent_cyan.label",
+      "default": "#00e5ff"
+    },
+    {
+      "type": "color",
+      "id": "accent_magenta",
+      "label": "t:sections.voxtune_showcase.settings.accent_magenta.label",
+      "default": "#ff2d92"
+    },
+    {
+      "type": "color",
+      "id": "accent_purple",
+      "label": "t:sections.voxtune_showcase.settings.accent_purple.label",
+      "default": "#a855f7"
+    },
+    {
+      "type": "color",
+      "id": "page_background",
+      "label": "t:sections.voxtune_showcase.settings.page_background.label",
+      "default": "#000000"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "preset",
+      "name": "t:sections.voxtune_showcase.blocks.preset.name",
+      "settings": [
+        {
+          "type": "text",
+          "id": "category",
+          "label": "t:sections.voxtune_showcase.blocks.preset.settings.category.label",
+          "default": "Essential"
+        },
+        {
+          "type": "text",
+          "id": "name",
+          "label": "t:sections.voxtune_showcase.blocks.preset.settings.name.label",
+          "default": "Natural"
+        },
+        {
+          "type": "range",
+          "id": "speed",
+          "label": "t:sections.voxtune_showcase.blocks.preset.settings.speed.label",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "default": 20
+        },
+        {
+          "type": "range",
+          "id": "humanize",
+          "label": "t:sections.voxtune_showcase.blocks.preset.settings.humanize.label",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "default": 0
+        },
+        {
+          "type": "range",
+          "id": "mix",
+          "label": "t:sections.voxtune_showcase.blocks.preset.settings.mix.label",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "default": 100
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:sections.voxtune_showcase.presets.name"
+    }
+  ]
+}
+{% endschema %}

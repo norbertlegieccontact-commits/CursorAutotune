@@ -1,0 +1,82 @@
+{
+  "sections": {
+    "voxtune_showcase": {
+      "name": "VoxTune Showcase",
+      "settings": {
+        "logo_line_1": {
+          "label": "Logo line 1"
+        },
+        "logo_line_2": {
+          "label": "Logo line 2"
+        },
+        "brand_url": {
+          "label": "Brand URL text"
+        },
+        "brand_url_link": {
+          "label": "Brand URL link"
+        },
+        "formant_title": {
+          "label": "Formant panel title"
+        },
+        "default_preset": {
+          "label": "Default preset name"
+        },
+        "visualizer_label": {
+          "label": "Visualizer label"
+        },
+        "show_keyboard_hints": {
+          "label": "Show keyboard shortcuts"
+        },
+        "show_cta": {
+          "label": "Show buy button"
+        },
+        "cta_label": {
+          "label": "Buy button label"
+        },
+        "cta_link": {
+          "label": "Buy button link"
+        },
+        "colors_header": {
+          "content": "Colors"
+        },
+        "accent_cyan": {
+          "label": "Accent cyan"
+        },
+        "accent_magenta": {
+          "label": "Accent magenta"
+        },
+        "accent_purple": {
+          "label": "Accent purple"
+        },
+        "page_background": {
+          "label": "Page background"
+        }
+      },
+      "blocks": {
+        "preset": {
+          "name": "Preset",
+          "settings": {
+            "category": {
+              "label": "Category"
+            },
+            "name": {
+              "label": "Preset name"
+            },
+            "speed": {
+              "label": "Speed value"
+            },
+            "humanize": {
+              "label": "Humanize value"
+            },
+            "mix": {
+              "label": "Mix value"
+            }
+          }
+        }
+      },
+      "presets": {
+        "name": "VoxTune Showcase"
+      }
+    }
+  }
+}

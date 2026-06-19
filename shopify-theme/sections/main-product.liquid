@@ -1,0 +1,21 @@
+<section class="page-width" style="padding: 4rem 2rem; max-width: 960px; margin: 0 auto; font-family: Inter, sans-serif;">
+  <div class="product">
+    <h1 style="font-family: 'Playfair Display', serif; margin-bottom: 1rem;">{{ product.title }}</h1>
+    <p style="margin-bottom: 1.5rem; font-size: 1.25rem;">{{ product.price | money }}</p>
+    {% form 'product', product %}
+      <button type="submit" name="add" style="padding: 12px 24px; cursor: pointer;">
+        Add to cart
+      </button>
+    {% endform %}
+    <div class="rte" style="margin-top: 2rem;">{{ product.description }}</div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Product information",
+  "tag": "section",
+  "class": "section-main-product",
+  "settings": []
+}
+{% endschema %}

@@ -1,0 +1,23 @@
+{
+  "sections": {
+    "voxtune-showcase": {
+      "type": "voxtune-showcase",
+      "settings": {
+        "logo_line_1": "VOX",
+        "logo_line_2": "TUNE",
+        "brand_url": "vox-tune.com",
+        "formant_title": "VoxShift Pro",
+        "default_preset": "Natural",
+        "visualizer_label": "Pitch Detection",
+        "show_keyboard_hints": true,
+        "show_cta": false,
+        "cta_label": "Buy VoxTune",
+        "accent_cyan": "#00e5ff",
+        "accent_magenta": "#ff2d92",
+        "accent_purple": "#a855f7",
+        "page_background": "#000000"
+      }
+    }
+  },
+  "order": ["voxtune-showcase"]
+}
