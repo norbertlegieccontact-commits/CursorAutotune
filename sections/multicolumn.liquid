@@ -1,0 +1,158 @@
+<section class="multicolumn section-{{ section.id }}" style="background-color: {{ section.settings.bg_color }}; padding: {{ section.settings.section_padding }}px 0;">
+  <div class="container">
+    {%- if section.settings.heading != blank -%}
+      <div class="section-header section-header--{{ section.settings.heading_align }}">
+        {%- if section.settings.subheading != blank -%}
+          <p class="eyebrow" style="color: {{ section.settings.accent_color }};">{{ section.settings.subheading | escape }}</p>
+        {%- endif -%}
+        <h2 class="section-header__title h2" style="color: {{ section.settings.heading_color }};">{{ section.settings.heading | escape }}</h2>
+      </div>
+    {%- endif -%}
+
+    <div class="multicolumn__grid multicolumn__grid--{{ section.blocks.size }} multicolumn__grid--align-{{ section.settings.column_align }}">
+      {%- for block in section.blocks -%}
+        <div class="multicolumn__item" {{ block.shopify_attributes }}>
+          {%- if block.settings.icon != blank -%}
+            <div class="multicolumn__icon">
+              <img src="{{ block.settings.icon | image_url: width: 80 }}" alt="{{ block.settings.icon.alt | escape }}" width="80" loading="lazy">
+            </div>
+          {%- elsif block.settings.emoji != blank -%}
+            <div class="multicolumn__emoji" aria-hidden="true">{{ block.settings.emoji }}</div>
+          {%- endif -%}
+          {%- if block.settings.heading != blank -%}
+            <h3 class="multicolumn__item-heading h4" style="color: {{ section.settings.heading_color }};">{{ block.settings.heading | escape }}</h3>
+          {%- endif -%}
+          {%- if block.settings.text != blank -%}
+            <div class="multicolumn__item-text rte" style="color: {{ section.settings.text_color }};">{{ block.settings.text }}</div>
+          {%- endif -%}
+          {%- if block.settings.btn_label != blank -%}
+            <a href="{{ block.settings.btn_link }}" class="btn btn--link">{{ block.settings.btn_label | escape }}</a>
+          {%- endif -%}
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Multicolumn",
+  "tag": "section",
+  "blocks": [
+    {
+      "type": "column",
+      "name": "Column",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "icon",
+          "label": "Icon image"
+        },
+        {
+          "type": "text",
+          "id": "emoji",
+          "label": "Emoji (if no icon)"
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Column heading"
+        },
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Text",
+          "default": "<p>Column description text goes here.</p>"
+        },
+        {
+          "type": "text",
+          "id": "btn_label",
+          "label": "Link label"
+        },
+        {
+          "type": "url",
+          "id": "btn_link",
+          "label": "Link"
+        }
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading"
+    },
+    {
+      "type": "select",
+      "id": "heading_align",
+      "label": "Heading alignment",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "select",
+      "id": "column_align",
+      "label": "Column content alignment",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent color",
+      "default": "#0066cc"
+    },
+    {
+      "type": "color",
+      "id": "heading_color",
+      "label": "Heading color",
+      "default": "#1a1a1a"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#4a4a4a"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Background color",
+      "default": "#f9f9f9"
+    },
+    {
+      "type": "range",
+      "id": "section_padding",
+      "label": "Vertical padding",
+      "min": 20,
+      "max": 120,
+      "step": 10,
+      "unit": "px",
+      "default": 60
+    }
+  ],
+  "presets": [
+    {
+      "name": "Multicolumn",
+      "blocks": [
+        { "type": "column" },
+        { "type": "column" },
+        { "type": "column" }
+      ]
+    }
+  ]
+}
+{% endschema %}

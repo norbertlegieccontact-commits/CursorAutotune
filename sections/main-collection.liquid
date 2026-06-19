@@ -1,0 +1,87 @@
+<section class="main-collection section-{{ section.id }}">
+  <div class="container">
+    <div class="collection-header">
+      <h1 class="collection-header__title h2">{{ collection.title }}</h1>
+      {%- if collection.description != blank -%}
+        <div class="collection-header__description rte">{{ collection.description }}</div>
+      {%- endif -%}
+    </div>
+
+    {%- if section.settings.show_sort or section.settings.show_filters -%}
+      <div class="collection-toolbar">
+        {%- if section.settings.show_filters -%}
+          <button class="btn btn--secondary collection-toolbar__filter-btn" aria-expanded="false" aria-controls="collection-filters">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Filter
+          </button>
+        {%- endif -%}
+        {%- if section.settings.show_sort -%}
+          <div class="collection-toolbar__sort">
+            <label for="sort-by" class="visually-hidden">Sort by</label>
+            <select id="sort-by" name="sort_by" class="collection-toolbar__select" onchange="window.location = '{{ collection.url }}?sort_by=' + this.value">
+              {%- assign sort_by = collection.sort_by | default: collection.default_sort_by -%}
+              {%- for option in collection.sort_options -%}
+                <option value="{{ option.value }}" {% if option.value == sort_by %}selected{% endif %}>{{ option.name }}</option>
+              {%- endfor -%}
+            </select>
+          </div>
+        {%- endif -%}
+        <p class="collection-toolbar__count">{{ collection.products_count }} products</p>
+      </div>
+    {%- endif -%}
+
+    {%- paginate collection.products by section.settings.products_per_page -%}
+      <div class="product-grid product-grid--{{ section.settings.columns }}">
+        {%- for product in collection.products -%}
+          {% render 'product-card', product: product %}
+        {%- else -%}
+          <p class="collection-empty">{{ 'collections.general.no_matches' | t }}</p>
+        {%- endfor -%}
+      </div>
+
+      {%- if paginate.pages > 1 -%}
+        {%- render 'pagination', paginate: paginate -%}
+      {%- endif -%}
+    {%- endpaginate -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Collection products",
+  "settings": [
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "label": "Products per page",
+      "min": 8,
+      "max": 48,
+      "step": 4,
+      "default": 24
+    },
+    {
+      "type": "select",
+      "id": "columns",
+      "label": "Columns (desktop)",
+      "options": [
+        { "value": "2", "label": "2" },
+        { "value": "3", "label": "3" },
+        { "value": "4", "label": "4" }
+      ],
+      "default": "4"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_sort",
+      "label": "Show sort dropdown",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_filters",
+      "label": "Show filter button",
+      "default": true
+    }
+  ]
+}
+{% endschema %}

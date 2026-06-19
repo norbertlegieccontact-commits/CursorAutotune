@@ -1,0 +1,230 @@
+<section class="hero section-{{ section.id }}" style="min-height: {{ section.settings.height }}px; background-color: {{ section.settings.bg_color }};">
+  {%- if section.settings.background_image != blank -%}
+    <div class="hero__bg-media">
+      <img
+        src="{{ section.settings.background_image | image_url: width: 1920 }}"
+        srcset="{{ section.settings.background_image | image_url: width: 768 }} 768w, {{ section.settings.background_image | image_url: width: 1280 }} 1280w, {{ section.settings.background_image | image_url: width: 1920 }} 1920w"
+        alt="{{ section.settings.background_image.alt | escape }}"
+        width="1920"
+        height="{{ 1920 | divided_by: section.settings.background_image.aspect_ratio | round }}"
+        loading="eager"
+        class="hero__bg-img"
+      >
+      {%- if section.settings.overlay_opacity > 0 -%}
+        <div class="hero__overlay" style="background-color: {{ section.settings.overlay_color }}; opacity: {{ section.settings.overlay_opacity | divided_by: 100.0 }};"></div>
+      {%- endif -%}
+    </div>
+  {%- elsif section.settings.video_url != blank -%}
+    <div class="hero__bg-media">
+      <video class="hero__bg-video" autoplay loop muted playsinline>
+        <source src="{{ section.settings.video_url }}" type="video/mp4">
+      </video>
+      {%- if section.settings.overlay_opacity > 0 -%}
+        <div class="hero__overlay" style="background-color: {{ section.settings.overlay_color }}; opacity: {{ section.settings.overlay_opacity | divided_by: 100.0 }};"></div>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+
+  <div class="hero__content container hero__content--{{ section.settings.content_align }}" style="color: {{ section.settings.text_color }};">
+    {%- if section.settings.subheading != blank -%}
+      <p class="hero__subheading" style="color: {{ section.settings.subheading_color }};">{{ section.settings.subheading | escape }}</p>
+    {%- endif -%}
+
+    {%- if section.settings.heading != blank -%}
+      <h1 class="hero__heading" style="font-size: {{ section.settings.heading_size }}px;">{{ section.settings.heading }}</h1>
+    {%- endif -%}
+
+    {%- if section.settings.body_text != blank -%}
+      <div class="hero__body rte">{{ section.settings.body_text }}</div>
+    {%- endif -%}
+
+    {%- if section.settings.btn_primary_label != blank or section.settings.btn_secondary_label != blank -%}
+      <div class="hero__buttons">
+        {%- if section.settings.btn_primary_label != blank -%}
+          <a
+            href="{{ section.settings.btn_primary_link }}"
+            class="btn btn--primary"
+            style="background-color: {{ section.settings.btn_primary_bg }}; color: {{ section.settings.btn_primary_text }};"
+          >{{ section.settings.btn_primary_label | escape }}</a>
+        {%- endif -%}
+        {%- if section.settings.btn_secondary_label != blank -%}
+          <a
+            href="{{ section.settings.btn_secondary_link }}"
+            class="btn btn--secondary"
+            style="border-color: {{ section.settings.btn_secondary_border }}; color: {{ section.settings.btn_secondary_text }};"
+          >{{ section.settings.btn_secondary_label | escape }}</a>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Hero banner",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading"
+    },
+    {
+      "type": "richtext",
+      "id": "heading",
+      "label": "Heading",
+      "default": "<p>Welcome to our store</p>"
+    },
+    {
+      "type": "richtext",
+      "id": "body_text",
+      "label": "Body text"
+    },
+    {
+      "type": "select",
+      "id": "content_align",
+      "label": "Content alignment",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "header",
+      "content": "Buttons"
+    },
+    {
+      "type": "text",
+      "id": "btn_primary_label",
+      "label": "Primary button label"
+    },
+    {
+      "type": "url",
+      "id": "btn_primary_link",
+      "label": "Primary button link"
+    },
+    {
+      "type": "color",
+      "id": "btn_primary_bg",
+      "label": "Primary button background",
+      "default": "#1a1a1a"
+    },
+    {
+      "type": "color",
+      "id": "btn_primary_text",
+      "label": "Primary button text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "text",
+      "id": "btn_secondary_label",
+      "label": "Secondary button label"
+    },
+    {
+      "type": "url",
+      "id": "btn_secondary_link",
+      "label": "Secondary button link"
+    },
+    {
+      "type": "color",
+      "id": "btn_secondary_border",
+      "label": "Secondary button border",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "btn_secondary_text",
+      "label": "Secondary button text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "header",
+      "content": "Background"
+    },
+    {
+      "type": "image_picker",
+      "id": "background_image",
+      "label": "Background image"
+    },
+    {
+      "type": "text",
+      "id": "video_url",
+      "label": "Background video URL (.mp4)",
+      "info": "Overrides background image when set"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Background color (when no media)",
+      "default": "#f5f5f5"
+    },
+    {
+      "type": "color",
+      "id": "overlay_color",
+      "label": "Overlay color",
+      "default": "#000000"
+    },
+    {
+      "type": "range",
+      "id": "overlay_opacity",
+      "label": "Overlay opacity",
+      "min": 0,
+      "max": 80,
+      "step": 5,
+      "unit": "%",
+      "default": 40
+    },
+    {
+      "type": "header",
+      "content": "Typography"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "subheading_color",
+      "label": "Subheading color",
+      "default": "#e5e7eb"
+    },
+    {
+      "type": "range",
+      "id": "heading_size",
+      "label": "Heading font size",
+      "min": 28,
+      "max": 96,
+      "step": 2,
+      "unit": "px",
+      "default": 56
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "range",
+      "id": "height",
+      "label": "Section minimum height",
+      "min": 300,
+      "max": 900,
+      "step": 20,
+      "unit": "px",
+      "default": 600
+    }
+  ],
+  "presets": [
+    {
+      "name": "Hero banner"
+    }
+  ]
+}
+{% endschema %}

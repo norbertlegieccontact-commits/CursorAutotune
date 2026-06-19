@@ -1,0 +1,55 @@
+{
+  "general": {
+    "meta": {
+      "home": "Home"
+    },
+    "general": {
+      "home": "Back to home",
+      "powered_by_shopify": "Powered by Shopify",
+      "continue_shopping": "Continue shopping"
+    }
+  },
+  "404": {
+    "page_title": "Page not found",
+    "page_description": "The page you were looking for does not exist."
+  },
+  "cart": {
+    "general": {
+      "title": "Your Cart",
+      "empty": "Your cart is currently empty.",
+      "checkout": "Check out",
+      "continue_shopping": "Continue shopping",
+      "taxes_and_shipping_at_checkout_html": "Taxes and shipping calculated at checkout."
+    }
+  },
+  "collections": {
+    "general": {
+      "view_all": "View all",
+      "no_matches": "No products found.",
+      "items_with_count": {
+        "one": "%{count} item",
+        "other": "%{count} items"
+      }
+    }
+  },
+  "newsletter": {
+    "label": "Email address",
+    "success": "Thanks for subscribing!"
+  },
+  "products": {
+    "product": {
+      "add_to_cart": "Add to cart",
+      "sold_out": "Sold out",
+      "unavailable": "Unavailable"
+    }
+  },
+  "search": {
+    "title": "Search",
+    "placeholder": "Search products…",
+    "results_with_count": {
+      "one": "%{count} result for "{{ terms }}"",
+      "other": "%{count} results for "{{ terms }}""
+    },
+    "no_results_html": "No results for <em>{{ terms }}</em>."
+  }
+}

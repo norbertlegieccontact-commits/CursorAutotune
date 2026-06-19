@@ -1,0 +1,51 @@
+{%- comment -%}
+  Renders a product card.
+  Usage: {% render 'product-card', product: product %}
+{%- endcomment -%}
+
+<div class="product-card" data-product-id="{{ product.id }}">
+  <a href="{{ product.url }}" class="product-card__image-link">
+    <div class="product-card__image-wrapper">
+      {%- if product.featured_media -%}
+        <img
+          src="{{ product.featured_media | image_url: width: 600, height: 600, crop: 'center' }}"
+          alt="{{ product.featured_media.alt | default: product.title | escape }}"
+          width="600"
+          height="600"
+          loading="lazy"
+          class="product-card__image product-card__image--primary"
+        >
+        {%- if product.media[1] -%}
+          <img
+            src="{{ product.media[1] | image_url: width: 600, height: 600, crop: 'center' }}"
+            alt="{{ product.media[1].alt | default: product.title | escape }}"
+            width="600"
+            height="600"
+            loading="lazy"
+            class="product-card__image product-card__image--secondary"
+          >
+        {%- endif -%}
+      {%- else -%}
+        {{ 'product-1' | placeholder_svg_tag: 'product-card__image product-card__image--placeholder' }}
+      {%- endif -%}
+    </div>
+
+    {%- unless product.available -%}
+      <span class="product-card__badge product-card__badge--sold-out">{{ 'products.product.sold_out' | t }}</span>
+    {%- else -%}
+      {%- if product.compare_at_price > product.price -%}
+        <span class="product-card__badge product-card__badge--sale">Sale</span>
+      {%- endif -%}
+    {%- endunless -%}
+  </a>
+
+  <div class="product-card__info">
+    {%- if product.vendor != blank -%}
+      <p class="product-card__vendor">{{ product.vendor }}</p>
+    {%- endif -%}
+    <a href="{{ product.url }}" class="product-card__title">{{ product.title }}</a>
+    <div class="product-card__price">
+      {%- render 'price', product: product -%}
+    </div>
+  </div>
+</div>

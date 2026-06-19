@@ -1,0 +1,152 @@
+<section class="main-product section-{{ section.id }}">
+  <div class="container">
+    <div class="product-page">
+      <div class="product-page__gallery">
+        {%- if product.featured_media -%}
+          <div class="product-gallery">
+            <div class="product-gallery__main">
+              <img
+                id="product-featured-image"
+                src="{{ product.featured_media | image_url: width: 900 }}"
+                srcset="{{ product.featured_media | image_url: width: 450 }} 450w, {{ product.featured_media | image_url: width: 900 }} 900w"
+                alt="{{ product.featured_media.alt | escape }}"
+                width="900"
+                height="{{ 900 | divided_by: product.featured_media.aspect_ratio | round }}"
+                loading="eager"
+                class="product-gallery__featured"
+              >
+            </div>
+            {%- if product.media.size > 1 -%}
+              <div class="product-gallery__thumbs">
+                {%- for media in product.media -%}
+                  <button
+                    class="product-gallery__thumb {% if forloop.first %}is-active{% endif %}"
+                    data-media-id="{{ media.id }}"
+                    aria-label="View image {{ forloop.index }}"
+                  >
+                    <img
+                      src="{{ media | image_url: width: 120, height: 120, crop: 'center' }}"
+                      alt="{{ media.alt | escape }}"
+                      width="120"
+                      height="120"
+                      loading="lazy"
+                    >
+                  </button>
+                {%- endfor -%}
+              </div>
+            {%- endif -%}
+          </div>
+        {%- else -%}
+          {{ 'product-1' | placeholder_svg_tag: 'product-gallery__featured placeholder' }}
+        {%- endif -%}
+      </div>
+
+      <div class="product-page__info">
+        {%- if section.settings.show_vendor and product.vendor != blank -%}
+          <p class="product-page__vendor eyebrow">{{ product.vendor }}</p>
+        {%- endif -%}
+        <h1 class="product-page__title h2">{{ product.title }}</h1>
+
+        <div class="product-page__price">
+          {%- render 'price', product: product -%}
+        </div>
+
+        {%- if product.description != blank -%}
+          <div class="product-page__description rte">{{ product.description }}</div>
+        {%- endif -%}
+
+        {%- form 'product', product, id: 'product-form' -%}
+          <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+
+          {%- unless product.has_only_default_variant -%}
+            {%- for option in product.options_with_values -%}
+              <div class="product-option">
+                <label class="product-option__label" for="option-{{ option.name | handle }}">{{ option.name }}</label>
+                <div class="product-option__values">
+                  {%- for value in option.values -%}
+                    <input
+                      type="radio"
+                      id="option-{{ option.name | handle }}-{{ value | handle }}"
+                      name="{{ option.name }}"
+                      value="{{ value | escape }}"
+                      {% if option.selected_value == value %}checked{% endif %}
+                      class="product-option__radio visually-hidden"
+                    >
+                    <label for="option-{{ option.name | handle }}-{{ value | handle }}" class="product-option__value-label">{{ value }}</label>
+                  {%- endfor -%}
+                </div>
+              </div>
+            {%- endfor -%}
+          {%- endunless -%}
+
+          {%- if section.settings.show_quantity -%}
+            <div class="product-page__quantity">
+              <label for="quantity" class="product-page__qty-label">Quantity</label>
+              <div class="quantity-selector">
+                <button type="button" class="quantity-selector__btn" aria-label="Decrease quantity">-</button>
+                <input type="number" id="quantity" name="quantity" value="1" min="1" class="quantity-selector__input" aria-label="Quantity">
+                <button type="button" class="quantity-selector__btn" aria-label="Increase quantity">+</button>
+              </div>
+            </div>
+          {%- endif -%}
+
+          <div class="product-page__actions">
+            <button
+              type="submit"
+              name="add"
+              class="btn btn--primary btn--full product-page__atc"
+              {% unless product.available %}disabled{% endunless %}
+            >
+              {% if product.available %}
+                {{ 'products.product.add_to_cart' | t }}
+              {% else %}
+                {{ 'products.product.sold_out' | t }}
+              {% endif %}
+            </button>
+            {%- if section.settings.show_buy_now -%}
+              {{ form | payment_button }}
+            {%- endif -%}
+          </div>
+        {%- endform -%}
+
+        {%- if section.settings.show_share -%}
+          <div class="product-page__share">
+            {%- render 'share-button', share_title: product.title, share_permalink: product.url, share_image: product.featured_media -%}
+          </div>
+        {%- endif -%}
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Product information",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_vendor",
+      "label": "Show vendor",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_quantity",
+      "label": "Show quantity selector",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_buy_now",
+      "label": "Show 'Buy it now' button",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_share",
+      "label": "Show share button",
+      "default": true
+    }
+  ]
+}
+{% endschema %}

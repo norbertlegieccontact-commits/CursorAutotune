@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="{{ request.locale.iso_code }}">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{{ page_description | escape }}">
+
+    <title>
+      {%- if template == 'index' -%}
+        {{ shop.name }} &mdash; {{ 'general.meta.home' | t }}
+      {%- elsif template == '404' -%}
+        {{ '404.page_title' | t }} &mdash; {{ shop.name }}
+      {%- else -%}
+        {{ page_title }} &mdash; {{ shop.name }}
+      {%- endif -%}
+    </title>
+
+    {{ content_for_header }}
+
+    {%- if settings.favicon != blank -%}
+      <link rel="icon" type="image/png" href="{{ settings.favicon | image_url: width: 32, height: 32 }}">
+    {%- endif -%}
+
+    {{ 'theme.css' | asset_url | stylesheet_tag }}
+
+    {%- if settings.custom_fonts -%}
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="{{ settings.google_fonts_url }}" rel="stylesheet">
+    {%- endif -%}
+
+    <style>
+      :root {
+        --color-primary: {{ settings.color_primary }};
+        --color-secondary: {{ settings.color_secondary }};
+        --color-background: {{ settings.color_background }};
+        --color-text: {{ settings.color_text }};
+        --color-accent: {{ settings.color_accent }};
+        --font-heading: {{ settings.font_heading.family }}, {{ settings.font_heading.fallback_families }};
+        --font-body: {{ settings.font_body.family }}, {{ settings.font_body.fallback_families }};
+        --font-size-base: {{ settings.font_size_base }}px;
+        --border-radius: {{ settings.border_radius }}px;
+        --container-width: {{ settings.container_width }}px;
+      }
+
+      {{ settings.font_heading | font_face: font_display: 'swap' }}
+      {{ settings.font_body | font_face: font_display: 'swap' }}
+    </style>
+
+    {%- if settings.custom_css != blank -%}
+      <style>{{ settings.custom_css }}</style>
+    {%- endif -%}
+  </head>
+
+  <body class="template-{{ template | split: '.' | first | handle }}{% if settings.animations_enabled %} animations-enabled{% endif %}">
+    {% section 'announcement-bar' %}
+    {% section 'header' %}
+
+    <main id="main-content" role="main" tabindex="-1">
+      {{ content_for_layout }}
+    </main>
+
+    {% section 'footer' %}
+
+    {{ 'theme.js' | asset_url | script_tag }}
+
+    {%- if settings.custom_js != blank -%}
+      <script>{{ settings.custom_js }}</script>
+    {%- endif -%}
+  </body>
+</html>

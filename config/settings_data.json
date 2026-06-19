@@ -1,0 +1,21 @@
+{
+  "current": {
+    "color_primary": "#1a1a1a",
+    "color_secondary": "#4a4a4a",
+    "color_accent": "#0066cc",
+    "color_background": "#ffffff",
+    "color_text": "#1a1a1a",
+    "color_border": "#e5e7eb",
+    "font_heading": "helvetica_neue_n7",
+    "font_body": "helvetica_neue_n4",
+    "font_size_base": 16,
+    "container_width": 1280,
+    "border_radius": 4,
+    "animations_enabled": true,
+    "custom_fonts": false,
+    "google_fonts_url": "",
+    "custom_css": "",
+    "custom_js": ""
+  },
+  "presets": {}
+}

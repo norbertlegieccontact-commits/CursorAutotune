@@ -1,0 +1,22 @@
+{%- comment -%}
+  Renders share buttons.
+  Usage: {% render 'share-button', share_title: product.title, share_permalink: product.url, share_image: product.featured_media %}
+{%- endcomment -%}
+
+<div class="share-button">
+  <span class="share-button__label">Share:</span>
+  <a
+    href="https://www.facebook.com/sharer/sharer.php?u={{ shop.url | append: share_permalink | url_encode }}"
+    target="_blank"
+    rel="noopener"
+    class="share-button__link share-button__link--facebook"
+    aria-label="Share on Facebook"
+  >Facebook</a>
+  <a
+    href="https://twitter.com/intent/tweet?url={{ shop.url | append: share_permalink | url_encode }}&text={{ share_title | url_encode }}"
+    target="_blank"
+    rel="noopener"
+    class="share-button__link share-button__link--twitter"
+    aria-label="Share on Twitter"
+  >Twitter</a>
+</div>

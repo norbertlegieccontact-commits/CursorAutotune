@@ -1,0 +1,41 @@
+{
+  "sections": {
+    "hero": {
+      "type": "hero",
+      "settings": {}
+    },
+    "featured-collection": {
+      "type": "featured-collection",
+      "settings": {}
+    },
+    "image-with-text": {
+      "type": "image-with-text",
+      "settings": {}
+    },
+    "multicolumn": {
+      "type": "multicolumn",
+      "blocks": {
+        "col-1": { "type": "column", "settings": { "heading": "Free Shipping", "emoji": "🚚", "text": "<p>On all orders over $50.</p>" } },
+        "col-2": { "type": "column", "settings": { "heading": "Easy Returns", "emoji": "↩️", "text": "<p>30-day hassle-free returns.</p>" } },
+        "col-3": { "type": "column", "settings": { "heading": "Secure Payment", "emoji": "🔒", "text": "<p>SSL encrypted checkout.</p>" } }
+      },
+      "block_order": ["col-1", "col-2", "col-3"],
+      "settings": {}
+    },
+    "testimonials": {
+      "type": "testimonials",
+      "blocks": {
+        "t-1": { "type": "testimonial", "settings": { "rating": 5, "text": "Amazing product!", "author": "Happy Customer" } },
+        "t-2": { "type": "testimonial", "settings": { "rating": 5, "text": "Highly recommend.", "author": "Loyal Fan" } },
+        "t-3": { "type": "testimonial", "settings": { "rating": 5, "text": "Will buy again!", "author": "Repeat Buyer" } }
+      },
+      "block_order": ["t-1", "t-2", "t-3"],
+      "settings": {}
+    },
+    "newsletter": {
+      "type": "newsletter",
+      "settings": {}
+    }
+  },
+  "order": ["hero", "featured-collection", "image-with-text", "multicolumn", "testimonials", "newsletter"]
+}
