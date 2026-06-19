@@ -1,0 +1,31 @@
+[
+  {
+    "name": "theme_info",
+    "theme_name": "Cursor Autotune Shopify Theme",
+    "theme_author": "Cursor",
+    "theme_version": "1.0.0",
+    "theme_documentation_url": "https://shopify.dev/docs/storefronts/themes",
+    "theme_support_url": "https://shopify.dev/docs/storefronts/themes"
+  },
+  {
+    "name": "Brand",
+    "settings": [
+      {
+        "type": "image_picker",
+        "id": "favicon",
+        "label": "Favicon"
+      }
+    ]
+  },
+  {
+    "name": "Colors",
+    "settings": [
+      {
+        "type": "color",
+        "id": "color_background",
+        "label": "Browser theme color",
+        "default": "#ffffff"
+      }
+    ]
+  }
+]

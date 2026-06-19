@@ -1,0 +1,48 @@
+{
+  "sections": {
+    "one_to_one_page": {
+      "type": "one-to-one-page",
+      "settings": {
+        "eyebrow": "New collection",
+        "heading": "Your exact landing page, ready for Shopify",
+        "subheading": "<p>Replace this starter content with the copy, imagery, spacing, and styling from the Claude Code project.</p>",
+        "primary_label": "Shop now",
+        "primary_link": "shopify://collections/all",
+        "secondary_label": "Learn more",
+        "secondary_link": "",
+        "custom_css": ""
+      },
+      "blocks": {
+        "feature_1": {
+          "type": "feature",
+          "settings": {
+            "title": "Editable content",
+            "text": "Every text and image field can be adjusted in Shopify Theme Editor."
+          }
+        },
+        "feature_2": {
+          "type": "feature",
+          "settings": {
+            "title": "1:1 migration path",
+            "text": "Paste the original CSS and map the original sections into Liquid blocks."
+          }
+        },
+        "feature_3": {
+          "type": "feature",
+          "settings": {
+            "title": "Shopify native",
+            "text": "Products, collections, and links can use Shopify dynamic sources."
+          }
+        }
+      },
+      "block_order": [
+        "feature_1",
+        "feature_2",
+        "feature_3"
+      ]
+    }
+  },
+  "order": [
+    "one_to_one_page"
+  ]
+}
